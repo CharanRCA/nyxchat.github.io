@@ -1,1 +1,1105 @@
 # nyxchat.github.io
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OmniPlatform (Full-Featured)</title>
+<style>
+    :root {
+        --bg-tertiary: #202225;
+        --bg-secondary: #2f3136;
+        --bg-primary: #36393f;
+        --text-normal: #dcddde;
+        --text-muted: #72767d;
+        --accent: #5865F2;
+        --snap-yellow: #FFFC00;
+        --tiktok-black: #010101;
+        --danger: #ed4245;
+        --success: #3ba55c;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Helvetica, Arial, sans-serif; scrollbar-width: thin; }
+    
+    body { background-color: var(--bg-tertiary); color: var(--text-normal); overflow: hidden; height: 100vh; display: flex; }
+
+    /* --- Layout Grid --- */
+    #app { display: flex; width: 100vw; height: 100%; }
+    
+    /* 1. Server List (Leftmost) */
+    .server-sidebar {
+        width: 72px; background-color: var(--bg-tertiary); display: flex; flex-direction: column; align-items: center; padding-top: 12px; overflow-y: auto;
+        flex-shrink: 0;
+    }
+    .server-icon {
+        width: 48px; height: 48px; border-radius: 50%; background-color: var(--bg-primary); margin-bottom: 8px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; font-weight: bold; position: relative;
+    }
+    .server-icon:hover, .server-icon.active { border-radius: 16px; background-color: var(--accent); }
+    .server-icon.snap-mode { background-color: var(--snap-yellow); color: black; }
+    .server-icon.tiktok-mode { background: linear-gradient(45deg, #69C9D0, #EE1D52); color: white; }
+    .server-icon.leaderboard-mode { background: linear-gradient(45deg, #FFD700, #F8B500); color: black; }
+
+    /* 2. Channel List */
+    .channel-sidebar {
+        width: 240px; background-color: var(--bg-secondary); display: flex; flex-direction: column;
+        flex-shrink: 0;
+    }
+    .server-header { height: 48px; padding: 12px; font-weight: bold; box-shadow: 0 1px 0 rgba(0,0,0,0.2); cursor: pointer; }
+    .channel-list { flex: 1; padding: 10px; overflow-y: auto; }
+    .channel-item {
+        padding: 6px 8px; margin-bottom: 2px; border-radius: 4px; color: var(--text-muted); cursor: pointer; display: flex; align-items: center;
+    }
+    .channel-item:hover { background-color: var(--bg-primary); color: var(--text-normal); }
+    .channel-item.active { background-color: #393c43; color: white; }
+    .user-panel { height: 52px; background-color: #292b2f; display: flex; align-items: center; padding: 0 8px; }
+    .user-panel .avatar { width: 32px; height: 32px; flex-shrink: 0; }
+    .user-panel .user-info { margin-left: 8px; overflow: hidden; }
+    .user-panel .user-name { font-weight: bold; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .user-panel .user-id { font-size: 11px; color: #b9bbbe; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+
+    /* 3. Main Content Area */
+    .main-content { flex: 1; background-color: var(--bg-primary); display: flex; flex-direction: column; position: relative; overflow: hidden; }
+    
+    /* Chat View */
+    .chat-view { height: 100%; display: flex; flex-direction: column; }
+    .chat-header { height: 48px; padding: 0 16px; display: flex; align-items: center; border-bottom: 1px solid rgba(0,0,0,0.2); font-weight: bold; flex-shrink: 0; }
+    .message-list { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+    .message { display: flex; gap: 16px; position: relative; }
+    .message:hover { background-color: rgba(0,0,0,0.02); }
+    .avatar { width: 40px; height: 40px; border-radius: 50%; background: gray; flex-shrink: 0; }
+    .msg-content h4 { font-size: 1rem; margin-bottom: 4px; }
+    .msg-timestamp { font-size: 0.7rem; color: var(--text-muted); margin-left: 8px; font-weight: normal; }
+    .msg-text { line-height: 1.4; white-space: pre-wrap; word-break: break-word; }
+    .msg-image { max-width: 300px; border-radius: 8px; margin-top: 5px; }
+    .chat-input-area { padding: 0 16px 24px; margin-top: auto; flex-shrink: 0; }
+    .chat-input-wrapper { background-color: #40444b; border-radius: 8px; padding: 11px; }
+    #message-input { background: transparent; border: none; color: white; width: 100%; outline: none; }
+
+    /* Member List (Right) */
+    .member-sidebar { width: 240px; background-color: var(--bg-secondary); padding: 16px; overflow-y: auto; display: none; flex-shrink: 0; }
+    .member-sidebar.visible { display: block; }
+    .role-header { text-transform: uppercase; font-size: 12px; color: var(--text-muted); margin-bottom: 8px; margin-top: 16px; }
+    .member-item { display: flex; align-items: center; gap: 10px; padding: 6px; opacity: 0.9; cursor: pointer; }
+    .member-item:hover { background-color: var(--bg-primary); border-radius: 4px; opacity: 1; }
+    .bot-tag { background: var(--accent); font-size: 10px; padding: 1px 4px; border-radius: 3px; margin-left: 5px; }
+
+    /* --- Snap Mode (Feed) --- */
+    .snap-feed { display: none; flex: 1; overflow-y: auto; padding: 20px; background: #f0f0f0; color: black; }
+    .snap-card {
+        background: white; border-radius: 16px; padding: 16px; margin-bottom: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); position: relative; max-width: 600px; margin-left: auto; margin-right: auto;
+    }
+    .snap-image-container { position: relative; width: 100%; border-radius: 8px; overflow: hidden; background: #eee; }
+    .snap-image-container img { display: block; width: 100%; }
+    .snap-image-container .snap-doodle { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+    .snap-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .ephemeral-timer { margin-left: auto; color: red; font-weight: bold; font-size: 0.9rem; }
+    .snap-actions { display: flex; gap: 15px; margin-top: 10px; color: #666; cursor: pointer; }
+    .snap-create-btn {
+        position: fixed; bottom: 30px; right: 30px; background: var(--snap-yellow); color: black; padding: 15px 25px; border-radius: 30px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 10;
+    }
+
+    /* --- TikTok Mode (Shorts) --- */
+    .shorts-container {
+        display: none; width: 100%; height: 100%; overflow-y: scroll; scroll-snap-type: y mandatory; background: black; position: relative;
+    }
+    .short-video {
+        width: 100%; height: 100%; scroll-snap-align: start; position: relative; display: flex; align-items: center; justify-content: center; background: #000;
+    }
+    .short-video-player {
+        width: 100%; height: 100%; object-fit: contain; /* 'contain' is safer than 'cover' */
+    }
+    .short-overlay {
+        position: absolute; bottom: 0; left: 0; width: 100%; padding: 20px; background: linear-gradient(transparent, rgba(0,0,0,0.8)); display: flex; align-items: flex-end;
+    }
+    .short-info { flex: 1; }
+    .short-actions { display: flex; flex-direction: column; gap: 20px; align-items: center; margin-left: 20px; }
+    .action-btn { text-align: center; font-size: 0.8rem; cursor: pointer; }
+    .action-icon { font-size: 1.5rem; background: rgba(255,255,255,0.2); width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 5px; }
+    .short-create-btn {
+        position: fixed; bottom: 30px; right: 30px; background: white; color: black; padding: 15px; border-radius: 50%; font-weight: bold; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 10; font-size: 1.5rem; line-height: 1;
+    }
+    
+    /* --- Leaderboard View --- */
+    .leaderboard-view {
+        display: none; flex: 1; overflow-y: auto; padding: 20px; color: var(--text-normal);
+    }
+    .leaderboard-view h2 { text-align: center; margin-bottom: 20px; }
+    .leaderboard-item {
+        display: flex; align-items: center; background: var(--bg-secondary); padding: 10px 15px; border-radius: 8px; margin-bottom: 10px;
+    }
+    .leaderboard-rank { font-size: 1.2rem; font-weight: bold; width: 40px; }
+    .leaderboard-user { flex: 1; display: flex; align-items: center; gap: 10px; }
+    .leaderboard-user .avatar { width: 40px; height: 40px; }
+    .leaderboard-points { font-size: 1.1rem; font-weight: bold; }
+    
+
+    /* Modals */
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center; }
+    .modal-content { background: var(--bg-primary); padding: 20px; border-radius: 8px; width: 440px; max-width: 90%; }
+    .modal input, .modal textarea { width: 100%; padding: 10px; margin: 10px 0; background: var(--bg-tertiary); border: none; color: white; border-radius: 4px; }
+    .modal input[type="file"] { padding: 10px; background: var(--bg-tertiary); color: var(--text-muted); }
+    #snap-canvas { background: #f0f0f0; border-radius: 4px; cursor: crosshair; margin-top: 10px; }
+    .btn { padding: 10px 20px; background: var(--accent); border: none; color: white; border-radius: 4px; cursor: pointer; }
+    
+    /* Loading Overlay */
+    #loading-overlay { display: none; z-index: 9999; flex-direction: column; }
+    #loading-overlay div { color: white; font-size: 1.2rem; margin-top: 10px; }
+    /* Simple CSS spinner */
+    .spinner { width: 50px; height: 50px; border: 5px solid #555; border-top: 5px solid white; border-radius: 50%; animation: spin 1s linear infinite; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: transform: rotate(360deg); } }
+    
+    /* Utils */
+    .hidden { display: none !important; }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .channel-sidebar, .member-sidebar {
+            display: none; /* Hide sidebars on mobile */
+        }
+        .server-sidebar {
+            width: 60px;
+        }
+        .server-icon {
+            width: 44px; height: 44px;
+        }
+        .member-sidebar.visible {
+            display: none; /* Keep members hidden */
+        }
+        .snap-create-btn { bottom: 20px; right: 20px; }
+        .short-create-btn { bottom: 20px; right: 20px; }
+    }
+</style>
+
+<!-- Firebase SDKs -->
+<script type="module">
+    // Import Firebase services
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { 
+        getAuth, 
+        signInAnonymously,
+        signInWithCustomToken,
+        onAuthStateChanged 
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { 
+        getFirestore, 
+        doc, 
+        getDoc,
+        getDocs,
+        setDoc, 
+        addDoc, 
+        collection, 
+        query, 
+        where, 
+        onSnapshot,
+        Timestamp, // Removed orderBy and limit to prevent index errors
+        increment,
+        updateDoc,
+        setLogLevel
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import {
+        getStorage,
+        ref,
+        uploadBytesResumable,
+        getDownloadURL
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+
+    /**
+     * OMNIPLATFORM CORE LOGIC (Full-Featured Edition)
+     */
+
+    // --- Firebase Globals ---
+    let app, auth, db, storage;
+    let userId, currentUsername, currentUserAvatar;
+    let currentServerId = 's1';
+    let currentChannelId = 'c1';
+    
+    // Firestore Path Globals
+    let appId, dbRoot;
+    let unsubscribeMessages = null;
+    let unsubscribeServers = null;
+    let unsubscribeChannels = null;
+    let unsubscribeUsers = null;
+    let unsubscribeSnaps = null;
+    let unsubscribeShorts = null;
+    let unsubscribeLeaderboard = null;
+
+    // --- Canvas Globals ---
+    let canvas, ctx, isDrawing = false;
+    
+    // --- TikTok Globals ---
+    let intersectionObserver;
+
+    // --- Initial Data Seeds ---
+    const SEED_DATA = {
+        servers: [
+            { id: 's1', name: 'Dev Community', icon: 'D', type: 'discord' },
+            { id: 's2', name: 'Snap Feed', icon: '👻', type: 'snap' },
+            { id: 's3', name: 'TikToks', icon: '🎵', type: 'tiktok' },
+            { id: 's4', name: 'Leaderboard', icon: '🏆', type: 'leaderboard' }
+        ],
+        channels: {
+            's1': [
+                { id: 'c1', name: 'general', type: 'text' },
+                { id: 'c2', name: 'memes', type: 'text' },
+                { id: 'c3', name: 'voice-lounge', type: 'voice' }
+            ]
+        },
+        users: [
+            { id: 'bot1', username: 'ClydeBot', isBot: true, status: 'online', avatar: 'https://ui-avatars.com/api/?name=CB&background=5865F2&color=fff', points: 0, globalRole: 'admin', serverRoles: {} },
+            { id: 'u2', username: 'Sarah_J', isBot: false, status: 'idle', avatar: 'https://placehold.co/64x64/FFC107/FFFFFF?text=SJ', points: 15, globalRole: 'user', serverRoles: {} },
+            { id: 'u3', username: 'MikeTech', isBot: false, status: 'dnd', avatar: 'https://placehold.co/64x64/343A40/FFFFFF?text=MT', points: 8, globalRole: 'user', serverRoles: {} }
+        ],
+        messages: [
+            { id: 'm1', channelId: 'c1', userId: 'bot1', content: 'Welcome to the server! Try /roll or /joke.', timestamp: Timestamp.now() },
+        ],
+        snaps: [
+            { id: 'sn1', userId: 'u2', content: 'Check out this view!', imageUrl: 'https://placehold.co/600x400/cccccc/333333?text=Sample+View', doodleUrl: null, expiresAt: Timestamp.fromMillis(Date.now() + 86400000), views: 120, timestamp: Timestamp.now() },
+        ],
+        shorts: [
+            { id: 'sh1', userId: 'u3', caption: 'This is a sample video.', videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4', likes: 1200, comments: 45, timestamp: Timestamp.now() },
+        ]
+    };
+
+    /**
+     * INITIALIZATION
+     */
+    document.addEventListener('DOMContentLoaded', () => {
+        initCanvas();
+        initIntersectionObserver();
+        initializeAppFirebase();
+        setupInputListeners();
+    });
+
+    function initCanvas() {
+        canvas = document.getElementById('snap-canvas');
+        if (!canvas) {
+            console.error("Canvas element not found!");
+            return;
+        }
+        ctx = canvas.getContext('2d');
+        ctx.strokeStyle = '#ED4245'; // Red drawing color
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseout', stopDrawing);
+        canvas.addEventListener('mousemove', draw);
+    }
+    
+    function initIntersectionObserver() {
+        const options = {
+            root: document.getElementById('view-shorts'),
+            rootMargin: '0px',
+            threshold: 0.8 // 80% of the video must be visible
+        };
+
+        intersectionObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                const video = entry.target;
+                if (entry.isIntersecting) {
+                    video.play().catch(e => console.warn("Video autoplay failed:", e.message));
+                } else {
+                    video.pause();
+                    video.currentTime = 0; // Reset video
+                }
+            });
+        }, options);
+    }
+    
+    async function initializeAppFirebase() {
+        // The __app_id is used for setting the Firestore path root (/artifacts/{appId})
+        appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        
+        // --- HARDCODED FIREBASE CONFIG FROM USER INPUT ---
+        const firebaseConfig = {
+          "apiKey": "AIzaSyDgs_cNZFe4TS6AoVfOUXalBEoLN42Lvn0",
+          "authDomain": "cosmixserverz.firebaseapp.com",
+          "projectId": "cosmixserverz",
+          "storageBucket": "cosmixserverz.appspot.com",
+          "messagingSenderId": "925350866529",
+          "appId": "1:925350866529:web:e4ffe81d9b0fedfbea0420",
+          "measurementId": "G-6S7RW3183X"
+        };
+        // --------------------------------------------------
+
+        try {
+            if (!firebaseConfig.apiKey) {
+                console.error("Firebase config is missing or invalid.");
+                document.getElementById('header-channel-name').innerText = "Firebase Config Missing";
+                return;
+            }
+
+            app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+            storage = getStorage(app); // Initialize Storage
+            setLogLevel('debug');
+
+            // FIX: dbRoot is now the root artifact path.
+            dbRoot = `/artifacts/${appId}`;
+
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    userId = user.uid;
+                    await setupUserProfile();
+                    
+                    document.getElementById('user-name').innerText = currentUsername;
+                    document.getElementById('user-avatar').style.backgroundImage = `url('${currentUserAvatar}')`;
+                    document.getElementById('user-id').innerText = userId;
+
+                    await seedDatabaseIfNeeded();
+                    setupRealtimeListeners();
+                    switchServer(currentServerId, 'discord', 'Dev Community'); // Default
+                    
+                } else {
+                    console.log("No user found, signing in anonymously...");
+                    const token = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+                    if (token) {
+                        try {
+                            await signInWithCustomToken(auth, token);
+                        } catch (e) {
+                            console.warn("Custom token sign-in failed, falling back to anonymous.", e);
+                            await signInAnonymously(auth);
+                        }
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                }
+            });
+
+        } catch (error) {
+            console.error("Error initializing Firebase:", error);
+            document.getElementById('header-channel-name').innerText = "Firebase Error";
+        }
+    }
+    
+    async function setupUserProfile() {
+        // FIX: Path now includes '/public/data'
+        const userRef = doc(db, `${dbRoot}/public/data/users`, userId);
+        const userSnap = await getDoc(userRef);
+
+        if (!userSnap.exists()) {
+            const randomName = `User${Math.floor(Math.random() * 9000) + 1000}`;
+            const randomAvatar = `https://placehold.co/64x64/5865F2/FFFFFF?text=${randomName.substring(0,2)}`;
+            
+            const newUser = {
+                id: userId,
+                username: randomName,
+                isBot: false,
+                status: 'online',
+                avatar: randomAvatar,
+                points: 0,
+                globalRole: 'user',
+                serverRoles: {}
+            };
+            await setDoc(userRef, newUser);
+            currentUsername = newUser.username;
+            currentUserAvatar = newUser.avatar;
+        } else {
+            const userData = userSnap.data();
+            currentUsername = userData.username;
+            currentUserAvatar = userData.avatar;
+            await setDoc(userRef, { status: 'online' }, { merge: true });
+        }
+    }
+
+    async function seedDatabaseIfNeeded() {
+        // FIX: Path now includes '/public/data'
+        const configRef = doc(db, `${dbRoot}/public/data/app-config`, 'config');
+        const configSnap = await getDoc(configRef);
+
+        if (!configSnap.exists()) {
+            console.log("No config found. Seeding database...");
+
+            // FIX: All paths updated to include '/public/data'
+            for (const user of SEED_DATA.users) await setDoc(doc(db, `${dbRoot}/public/data/users`, user.id), user);
+            for (const server of SEED_DATA.servers) await setDoc(doc(db, `${dbRoot}/public/data/servers`, server.id), server);
+            for (const channel of SEED_DATA.channels['s1']) await setDoc(doc(db, `${dbRoot}/public/data/servers/s1/channels`, channel.id), channel);
+            for (const msg of SEED_DATA.messages) await setDoc(doc(db, `${dbRoot}/public/data/messages`, msg.id), msg);
+            for (const snap of SEED_DATA.snaps) await setDoc(doc(db, `${dbRoot}/public/data/snaps`, snap.id), snap);
+            for (const short of SEED_DATA.shorts) await setDoc(doc(db, `${dbRoot}/public/data/shorts`, short.id), short);
+
+            await setDoc(configRef, { initialized: true });
+            console.log("Database seeding complete.");
+        } else {
+            console.log("Database already initialized.");
+        }
+    }
+    
+    /**
+     * REAL-TIME LISTENERS (onSnapshot)
+     */
+    function setupRealtimeListeners() {
+        // Unsubscribe from all old listeners
+        if (unsubscribeServers) unsubscribeServers();
+        if (unsubscribeUsers) unsubscribeUsers();
+        if (unsubscribeSnaps) unsubscribeSnaps();
+        if (unsubscribeShorts) unsubscribeShorts();
+        if (unsubscribeLeaderboard) unsubscribeLeaderboard();
+
+        // FIX: Path now includes '/public/data'
+        const serversQuery = query(collection(db, `${dbRoot}/public/data/servers`));
+        unsubscribeServers = onSnapshot(serversQuery, (snapshot) => {
+            const servers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            renderServerList(servers);
+        });
+        
+        // FIX: Path now includes '/public/data'
+        const usersQuery = query(collection(db, `${dbRoot}/public/data/users`));
+        unsubscribeUsers = onSnapshot(usersQuery, (snapshot) => {
+            const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            renderMembers(users);
+        });
+        
+        // FIX: Removed orderBy and limit to avoid index requirement. Sort and limit in memory.
+        const leaderboardQuery = query(collection(db, `${dbRoot}/public/data/users`), where('isBot', '==', false));
+        unsubscribeLeaderboard = onSnapshot(leaderboardQuery, (snapshot) => {
+            let users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+            // Sort in memory by points descending
+            users.sort((a, b) => (b.points || 0) - (a.points || 0));
+
+            // Limit to top 20
+            const topUsers = users.slice(0, 20);
+            
+            renderLeaderboard(topUsers);
+        });
+        
+        // FIX: Path now includes '/public/data'
+        const snapsQuery = query(collection(db, `${dbRoot}/public/data/snaps`)); // Removed orderBy
+        unsubscribeSnaps = onSnapshot(snapsQuery, (snapshot) => {
+            let snaps = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            // Sort in memory
+            snaps.sort((a, b) => (b.timestamp?.toMillis() || 0) - (a.timestamp?.toMillis() || 0));
+            renderSnapFeed(snaps);
+        });
+
+        // FIX: Path now includes '/public/data'
+        const shortsQuery = query(collection(db, `${dbRoot}/public/data/shorts`)); // Removed orderBy
+        unsubscribeShorts = onSnapshot(shortsQuery, (snapshot) => {
+            let shorts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            // Sort in memory
+            shorts.sort((a, b) => (b.timestamp?.toMillis() || 0) - (a.timestamp?.toMillis() || 0));
+            renderShorts(shorts);
+        });
+    }
+
+    /**
+     * RENDERING FUNCTIONS
+     */
+    function renderServerList(servers) {
+        const list = document.getElementById('server-list');
+        if (!list) return;
+        list.innerHTML = '';
+        
+        servers.forEach(server => {
+            const el = document.createElement('div');
+            el.className = `server-icon ${server.id === currentServerId ? 'active' : ''}`;
+            if (server.type === 'snap') el.classList.add('snap-mode');
+            if (server.type === 'tiktok') el.classList.add('tiktok-mode');
+            if (server.type === 'leaderboard') el.classList.add('leaderboard-mode');
+            
+            el.innerText = server.icon;
+            el.title = server.name;
+            el.onclick = () => switchServer(server.id, server.type, server.name);
+            list.appendChild(el);
+        });
+    }
+    
+    function switchServer(serverId, serverType, serverName) {
+        currentServerId = serverId;
+        
+        const serverIcons = document.querySelectorAll('.server-icon');
+        serverIcons.forEach(icon => icon.classList.remove('active'));
+        const activeIcon = Array.from(serverIcons).find(icon => icon.title === serverName);
+        if (activeIcon) activeIcon.classList.add('active');
+
+        // View Switching Logic
+        const channelSidebar = document.getElementById('channel-sidebar');
+        const memberSidebar = document.getElementById('member-sidebar');
+        const viewChat = document.getElementById('view-chat');
+        const viewSnap = document.getElementById('view-snap');
+        const viewShorts = document.getElementById('view-shorts');
+        const viewLeaderboard = document.getElementById('view-leaderboard');
+
+        viewChat.style.display = 'none';
+        viewSnap.style.display = 'none';
+        viewShorts.style.display = 'none';
+        viewLeaderboard.style.display = 'none';
+        
+        if (serverType === 'discord') {
+            channelSidebar.style.display = 'flex';
+            memberSidebar.style.display = 'block';
+            viewChat.style.display = 'flex';
+            document.getElementById('server-name').innerText = serverName;
+            setupChannelListener(serverId);
+            
+        } else if (serverType === 'snap') {
+            channelSidebar.style.display = 'none';
+            memberSidebar.style.display = 'none';
+            viewSnap.style.display = 'block';
+
+        } else if (serverType === 'tiktok') {
+            channelSidebar.style.display = 'none';
+            memberSidebar.style.display = 'none';
+            viewShorts.style.display = 'block';
+            
+        } else if (serverType === 'leaderboard') {
+            channelSidebar.style.display = 'none';
+            memberSidebar.style.display = 'none';
+            viewLeaderboard.style.display = 'block';
+        }
+    }
+    
+    function setupChannelListener(serverId) {
+        if (unsubscribeChannels) unsubscribeChannels();
+        
+        // FIX: Path now includes '/public/data'
+        const channelsQuery = query(collection(db, `${dbRoot}/public/data/servers/${serverId}/channels`));
+        unsubscribeChannels = onSnapshot(channelsQuery, (snapshot) => {
+            const channels = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            renderChannelList(channels);
+            
+            const channelExists = channels.some(c => c.id === currentChannelId);
+            if ((!channelExists && channels.length > 0) || (currentServerId !== serverId && channels.length > 0)) {
+                switchChannel(channels[0].id, channels[0].name);
+            } else if (channels.length > 0) {
+                switchChannel(currentChannelId, document.getElementById('header-channel-name').innerText);
+            }
+        });
+    }
+
+    function renderChannelList(channels) {
+        const list = document.getElementById('channel-list');
+        list.innerHTML = '';
+        channels.forEach(ch => {
+            const el = document.createElement('div');
+            el.className = `channel-item ${ch.id === currentChannelId ? 'active' : ''}`;
+            el.innerHTML = `${ch.type === 'voice' ? '🔊' : '#'} ${ch.name}`;
+            el.onclick = () => switchChannel(ch.id, ch.name);
+            list.appendChild(el);
+        });
+    }
+
+    function switchChannel(channelId, channelName) {
+        currentChannelId = channelId;
+        
+        document.querySelectorAll('.channel-item').forEach(item => {
+            item.classList.toggle('active', item.innerText.includes(channelName));
+        });
+        
+        document.getElementById('header-channel-name').innerText = channelName;
+        document.getElementById('message-input').placeholder = `Message #${channelName}`;
+        
+        if (unsubscribeMessages) unsubscribeMessages();
+        
+        // FIX: Path now includes '/public/data'
+        // FIX: Removed orderBy from query to prevent index error. Sorting is now done in the listener.
+        const messagesQuery = query(
+            collection(db, `${dbRoot}/public/data/messages`), 
+            where("channelId", "==", channelId)
+        );
+        
+        unsubscribeMessages = onSnapshot(messagesQuery, (snapshot) => {
+            let messages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            
+            // Sort messages by timestamp ascending in memory
+            messages.sort((a, b) => {
+                const timeA = a.timestamp?.toMillis() || 0;
+                const timeB = b.timestamp?.toMillis() || 0;
+                return timeA - timeB;
+            });
+
+            renderMessages(messages);
+        }, (error) => console.error("Error getting messages:", error));
+    }
+
+    async function renderMessages(messages) {
+        const list = document.getElementById('message-list');
+        if (!list) return;
+        
+        // FIX: Path now includes '/public/data'
+        const usersQuery = query(collection(db, `${dbRoot}/public/data/users`));
+        const usersSnapshot = await getDocs(usersQuery);
+        const userMap = {};
+        usersSnapshot.forEach(doc => {
+            userMap[doc.id] = doc.data();
+        });
+
+        list.innerHTML = '';
+        
+        messages.forEach(msg => {
+            const user = userMap[msg.userId] || { username: 'Unknown', avatar: '', isBot: false };
+            const el = document.createElement('div');
+            el.className = 'message';
+            
+            const date = msg.timestamp?.toDate() || new Date();
+            const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            el.innerHTML = `
+                <img src="${user.avatar}" class="avatar" onerror="this.src='https://placehold.co/40x40/72767d/FFFFFF?text=?'">
+                <div class="msg-content">
+                    <h4>${user.username} ${user.isBot ? '<span class="bot-tag">BOT</span>' : ''} <span class="msg-timestamp">${timeStr}</span></h4>
+                    <div class="msg-text">${formatText(msg.content)}</div>
+                    ${msg.image ? `<img src="${msg.image}" class="msg-image">` : ''}
+                </div>
+            `;
+            list.appendChild(el);
+        });
+        list.scrollTop = list.scrollHeight;
+    }
+
+    function renderMembers(users) {
+        const botList = document.getElementById('member-list-bots');
+        const userList = document.getElementById('member-list-users');
+        if (!botList || !userList) return;
+        
+        botList.innerHTML = '';
+        userList.innerHTML = '';
+
+        users.forEach(u => { // 'u' is the user object
+            const el = document.createElement('div');
+            el.className = 'member-item';
+            
+            let statusColor = '';
+            if (u.status === 'dnd') statusColor = 'color:#ed4245';
+            if (u.status === 'idle') statusColor = 'color:#faa61a';
+            
+            // FIX: Correctly using loop variable 'u'
+            el.innerHTML = `
+                <img src="${u.avatar}" class="avatar" style="width:32px;height:32px" onerror="this.src='https://placehold.co/40x40/72767d/FFFFFF?text=?'">
+                <span style="${statusColor}">${u.username} (${u.points || 0} pts)</span>
+                ${u.isBot ? '<span class="bot-tag">BOT</span>' : ''}
+            `;
+            if(u.isBot) botList.appendChild(el);
+            else userList.appendChild(el);
+        });
+    }
+
+    function formatText(text) {
+        if (!text) return '';
+        return text.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\*(.*?)\*/g, '<i>$1</i>');
+    }
+
+    async function renderSnapFeed(snaps) {
+        const container = document.getElementById('snap-container');
+        if (!container) return;
+        container.innerHTML = '';
+        const now = Date.now();
+        
+        // FIX: Path now includes '/public/data'
+        const usersQuery = query(collection(db, `${dbRoot}/public/data/users`));
+        const usersSnapshot = await getDocs(usersQuery);
+        const userMap = {};
+        usersSnapshot.forEach(doc => userMap[doc.id] = doc.data());
+
+        snaps.forEach(snap => {
+            const expires = snap.expiresAt?.toMillis() || 0;
+            if (expires < now) return; // Expired
+            
+            const user = userMap[snap.userId] || { username: 'Unknown', avatar: ''};
+            const timeLeft = Math.max(0, Math.floor((expires - now) / 60000));
+            const hoursLeft = Math.floor(timeLeft / 60);
+            
+            const card = document.createElement('div');
+            card.className = 'snap-card';
+            card.innerHTML = `
+                <div class="snap-header">
+                    <img src="${user.avatar}" class="avatar" onerror="this.src='https://placehold.co/40x40/72767d/FFFFFF?text=?'">
+                    <strong>${user.username}</strong>
+                    <span class="ephemeral-timer">⏳ ${hoursLeft}h ${timeLeft % 60}m left</span>
+                </div>
+                <div>${snap.content}</div>
+                <div class="snap-image-container" style="${!snap.imageUrl ? 'display:none' : ''}">
+                    <img src="${snap.imageUrl}" style="width:100%; border-radius:8px; margin-top:10px;" onerror="this.style.display='none'">
+                    ${snap.doodleUrl ? `<img src="${snap.doodleUrl}" class="snap-doodle">` : ''}
+                </div>
+                <div class="snap-actions">
+                    <span>👁️ ${snap.views}</span>
+                    <span>❤️ Like</span>
+                    <span>💬 Reply</span>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    async function renderShorts(shorts) {
+        const container = document.getElementById('view-shorts');
+        if (!container) return;
+        container.innerHTML = '';
+        
+        // FIX: Path now includes '/public/data'
+        const usersQuery = query(collection(db, `${dbRoot}/public/data/users`));
+        const usersSnapshot = await getDocs(usersQuery);
+        const userMap = {};
+        usersSnapshot.forEach(doc => userMap[doc.id] = doc.data());
+        
+        shorts.forEach(short => {
+            const user = userMap[short.userId] || { username: 'Unknown', avatar: ''};
+            const el = document.createElement('div');
+            el.className = 'short-video';
+            
+            el.innerHTML = `
+                <video class="short-video-player" src="${short.videoUrl}" loop muted playsinline onerror="this.style.display='none';"></video>
+                <div class="short-overlay">
+                    <div class="short-info">
+                        <h3>@${user.username}</h3>
+                        <p>${short.caption}</p>
+                        <p>🎵 Original Sound - ${user.username}</p>
+                    </div>
+                    <div class="short-actions">
+                        <div class="action-btn"><div class="action-icon"><img src="${user.avatar}" style="width:100%;height:100%;border-radius:50%" onerror="this.src='https://placehold.co/40x40/72767d/FFFFFF?text=?'"></div></div>
+                        <div class="action-btn"><div class="action-icon">❤️</div>${short.likes}</div>
+                        <div class="action-btn"><div class="action-icon">💬</div>${short.comments}</div>
+                        <div class="action-btn"><div class="action-icon">➡️</div>Share</div>
+                    </div>
+                </div>
+            `;
+            container.appendChild(el);
+            
+            // Add video to observer
+            const videoEl = el.querySelector('video');
+            if (videoEl) {
+                intersectionObserver.observe(videoEl);
+            }
+        });
+    }
+    
+    function renderLeaderboard(users) {
+        const container = document.getElementById('leaderboard-container');
+        if (!container) return;
+        container.innerHTML = '';
+        
+        users.forEach((user, index) => {
+            const el = document.createElement('div');
+            el.className = 'leaderboard-item';
+            el.innerHTML = `
+                <div class="leaderboard-rank">#${index + 1}</div>
+                <div class="leaderboard-user">
+                    <img src="${user.avatar}" class="avatar" onerror="this.src='https://placehold.co/40x40/72767d/FFFFFF?text=?'">
+                    <span>${user.username}</span>
+                </div>
+                <div class="leaderboard-points">${user.points || 0} pts</div>
+            `;
+            container.appendChild(el);
+        });
+    }
+
+    /**
+     * EVENT HANDLERS & ACTIONS
+     */
+     function setupInputListeners() {
+        document.getElementById('message-input').addEventListener('keypress', async function (e) {
+            if (e.key === 'Enter' && this.value.trim()) {
+                const content = this.value.trim();
+                this.value = '';
+                
+                const newMsg = {
+                    channelId: currentChannelId,
+                    userId: userId,
+                    content: content,
+                    timestamp: Timestamp.now()
+                };
+                
+                try {
+                    // FIX: Path now includes '/public/data'
+                    await addDoc(collection(db, `${dbRoot}/public/data/messages`), newMsg);
+                    await updateUserPoints(1); // +1 point for message
+                    await processBotCommands(content);
+                } catch (error) {
+                    console.error("Error sending message: ", error);
+                }
+            }
+        });
+     }
+
+    async function processBotCommands(text) {
+        const args = text.split(' ');
+        const command = args[0].toLowerCase();
+        let botResponse = null;
+
+        if (command === '/roll') {
+            const roll = Math.floor(Math.random() * 100) + 1;
+            botResponse = `🎲 @${currentUsername} rolled a **${roll}**!`;
+        } else if (command === '/joke') {
+            const jokes = ["Why do JS devs wear glasses? Because they don't C#.", "I'm a real-time app now!"];
+            botResponse = jokes[Math.floor(Math.random() * jokes.length)];
+        } else if (command === '/poll') {
+            const question = args.slice(1).join(' ');
+            botResponse = `📊 **Poll:** ${question || 'Yes or No?'}\n1️⃣ Yes\n2️⃣ No`;
+        }
+
+        if (botResponse) {
+            const botMsg = {
+                channelId: currentChannelId,
+                userId: 'bot1',
+                content: botResponse,
+                timestamp: Timestamp.now()
+            };
+            // FIX: Path now includes '/public/data'
+            await addDoc(collection(db, `${dbRoot}/public/data/messages`), botMsg);
+        }
+    }
+    
+    async function updateUserPoints(amount) {
+        try {
+            // FIX: Path now includes '/public/data'
+            const userRef = doc(db, `${dbRoot}/public/data/users`, userId);
+            await updateDoc(userRef, { points: increment(amount) });
+        } catch (error) {
+            console.error("Error updating points:", error);
+        }
+    }
+
+    // Make modal functions global
+    window.openModal = (id) => document.getElementById(id).style.display = 'flex';
+    window.closeModal = (id) => { 
+        document.getElementById(id).style.display = 'none'; 
+        if (id === 'modal-create-snap') clearCanvas();
+    }
+    window.showLoading = (message) => {
+        document.getElementById('loading-message').innerText = message;
+        document.getElementById('loading-overlay').style.display = 'flex';
+    }
+    window.hideLoading = () => document.getElementById('loading-overlay').style.display = 'none';
+
+    // File Upload Helper
+    function uploadFile(file, path) {
+        return new Promise((resolve, reject) => {
+            // FIX: Storage path now includes '/public/data'
+            const storageRef = ref(storage, `${dbRoot}/public/data/${path}/${Date.now()}_${file.name}`);
+            const uploadTask = uploadBytesResumable(storageRef, file);
+            
+            uploadTask.on('state_changed', 
+                (snapshot) => { /* Can be used for progress bar */ }, 
+                (error) => reject(error), 
+                () => {
+                    getDownloadURL(uploadTask.snapshot.ref).then(resolve).catch(reject);
+                }
+            );
+        });
+    }
+
+    window.createSnap = async () => {
+        const text = document.getElementById('snap-text').value;
+        const file = document.getElementById('snap-file').files[0];
+        const doodleDataUrl = canvas.toDataURL();
+        
+        if (!text && !file) return;
+        showLoading("Uploading Snap...");
+
+        let imageUrl = null;
+        if (file) {
+            try {
+                imageUrl = await uploadFile(file, 'snaps');
+            } catch (error) {
+                console.error("Error uploading snap image: ", error);
+                hideLoading();
+                return;
+            }
+        }
+        
+        const newSnap = {
+            userId: userId,
+            content: text,
+            imageUrl: imageUrl,
+            doodleUrl: doodleDataUrl, // Save the doodle
+            expiresAt: Timestamp.fromMillis(Date.now() + (24 * 60 * 60 * 1000)),
+            views: 0,
+            timestamp: Timestamp.now()
+        };
+        
+        try {
+            // FIX: Path now includes '/public/data'
+            await addDoc(collection(db, `${dbRoot}/public/data/snaps`), newSnap);
+            await updateUserPoints(5); // +5 points for snap
+            hideLoading();
+            closeModal('modal-create-snap');
+        } catch (error) {
+            console.error("Error creating snap doc: ", error);
+            hideLoading();
+        }
+    }
+    
+    window.createShort = async () => {
+        const caption = document.getElementById('short-caption').value;
+        const file = document.getElementById('short-file').files[0];
+        
+        if (!file) return;
+        showLoading("Uploading Short... (this may take a moment)");
+        
+        let videoUrl = null;
+        try {
+            videoUrl = await uploadFile(file, 'shorts');
+        } catch (error) {
+            console.error("Error uploading short video: ", error);
+            hideLoading();
+            return;
+        }
+        
+        const newShort = {
+            userId: userId,
+            caption: caption,
+            videoUrl: videoUrl,
+            likes: 0,
+            comments: 0,
+            timestamp: Timestamp.now()
+        };
+        
+        try {
+            // FIX: Path now includes '/public/data'
+            await addDoc(collection(db, `${dbRoot}/public/data/shorts`), newShort);
+            await updateUserPoints(10); // +10 points for short
+            hideLoading();
+            closeModal('modal-create-short');
+        } catch (error) {
+            console.error("Error creating short doc: ", error);
+            hideLoading();
+        }
+    }
+
+    // --- Canvas Drawing Functions ---
+    function startDrawing(e) { isDrawing = true; draw(e); }
+    function stopDrawing() { isDrawing = false; ctx.beginPath(); }
+    function draw(e) {
+        if (!isDrawing) return;
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        ctx.lineTo(x, y);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+    }
+    window.clearCanvas = () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+</script>
+
+</head>
+<body>
+
+<div id="app">
+    <!-- 1. Server Sidebar -->
+    <nav class="server-sidebar" id="server-list">
+        <!-- Rendered via JS -->
+    </nav>
+
+    <!-- 2. Channel Sidebar (Contextual) -->
+    <aside class="channel-sidebar" id="channel-sidebar">
+        <div class="server-header" id="server-name">Loading...</div>
+        <div class="channel-list" id="channel-list">
+            <!-- Rendered via JS -->
+        </div>
+        <div class="user-panel">
+            <div class="avatar" id="user-avatar" style="width: 32px; height: 32px; background: url('https://placehold.co/64x64/72767d/FFFFFF?text=') no-repeat center center / cover; border-radius: 50%;"></div>
+            <div class="user-info">
+                <div class="user-name" id="user-name">Connecting...</div>
+                <div class="user-id" id="user-id">...</div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- 3. Main Content -->
+    <main class="main-content" id="main-content">
+        <!-- Chat View -->
+        <div id="view-chat" class="chat-view">
+            <header class="chat-header">
+                <span style="color: var(--text-muted); margin-right: 5px;">#</span>
+                <span id="header-channel-name">loading</span>
+            </header>
+            <div class="message-list" id="message-list">
+                <!-- Messages Rendered Here -->
+            </div>
+            <div class="chat-input-area">
+                <div class="chat-input-wrapper">
+                    <input type="text" id="message-input" placeholder="Loading..." autocomplete="off">
+                </div>
+                <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">
+                    Commands: /roll, /joke, /poll [question]
+                </div>
+            </div>
+        </div>
+
+        <!-- Snap Feed View -->
+        <div id="view-snap" class="snap-feed">
+            <h2 style="margin-bottom: 20px; text-align: center;">Snap Feed (Ephemeral)</h2>
+            <div id="snap-container"></div>
+            <div class="snap-create-btn" onclick="openModal('modal-create-snap')">📸 Post Snap</div>
+        </div>
+
+        <!-- TikTok Shorts View -->
+        <div id="view-shorts" class="shorts-container">
+            <!-- Shorts Rendered Here -->
+            <div class="short-create-btn" onclick="openModal('modal-create-short')">+</div>
+        </div>
+        
+        <!-- Leaderboard View -->
+        <div id="view-leaderboard" class="leaderboard-view">
+            <h2>🏆 Global Leaderboard</h2>
+            <div id="leaderboard-container">
+                <!-- Rendered via JS -->
+            </div>
+        </div>
+    </main>
+
+    <!-- 4. Member Sidebar -->
+    <aside class="member-sidebar visible" id="member-sidebar">
+        <div class="role-header">Bots</div>
+        <div id="member-list-bots"></div>
+        <div class="role-header">Online</div>
+        <div id="member-list-users"></div>
+    </aside>
+</div>
+
+<!-- Modals -->
+
+<!-- Loading Overlay -->
+<div id="loading-overlay" class="modal">
+    <div class="spinner"></div>
+    <div id="loading-message">Uploading...</div>
+</div>
+
+<!-- Create Snap Modal -->
+<div id="modal-create-snap" class="modal">
+    <div class="modal-content">
+        <h3>Create Ephemeral Post</h3>
+        <textarea id="snap-text" placeholder="What's happening?" rows="3"></textarea>
+        
+        <label style="font-size: 12px; color: var(--text-muted); margin-top: 10px; display: block;">Image:</label>
+        <input type="file" id="snap-file" accept="image/*">
+        
+        <label style="font-size: 12px; color: var(--text-muted); margin-top: 10px; display: block;">Doodle:</label>
+        <canvas id="snap-canvas" width="400" height="150"></canvas>
+        
+        <div style="display:flex; justify-content: space-between; margin-top: 15px;">
+            <button class="btn" onclick="closeModal('modal-create-snap')">Cancel</button>
+            <div>
+                <button class="btn" onclick="clearCanvas()" style="background: var(--text-muted); margin-right: 10px;">Clear</button>
+                <button class="btn" onclick="createSnap()">Post (24h)</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Short Modal -->
+<div id="modal-create-short" class="modal">
+    <div class="modal-content">
+        <h3>Upload Short</h3>
+        <textarea id="short-caption" placeholder="Add a caption..." rows="2"></textarea>
+        
+        <label style="font-size: 12px; color: var(--text-muted); margin-top: 10px; display: block;">Video File (max 100MB):</label>
+        <input type="file" id="short-file" accept="video/*">
+        
+        <div style="display:flex; justify-content: flex-end; margin-top: 15px;">
+            <button class="btn" onclick="closeModal('modal-create-short')" style="background: var(--text-muted); margin-right: 10px;">Cancel</button>
+            <button class="btn" onclick="createShort()">Upload</button>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
