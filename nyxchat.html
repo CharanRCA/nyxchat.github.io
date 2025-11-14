@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OmniPlatform (Full-Featured)</title>
+<title>NyxChat</title>
+<script src="https://cdn.tailwindcss.com"></script>
 <style>
     :root {
         --bg-tertiary: #202225;
@@ -16,11 +17,29 @@
         --tiktok-black: #010101;
         --danger: #ed4245;
         --success: #3ba55c;
+        /* Role Colors */
+        --role-owner: #FEE75C; 
+        --role-admin: #E9262C;
+        --role-moderator: #2C6E6E;
+        --role-member: #3B72A4;
+        --role-bot: #7289da;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Helvetica, Arial, sans-serif; scrollbar-width: thin; }
+    * { 
+        box-sizing: border-box; 
+        margin: 0; 
+        padding: 0; 
+        font-family: 'Inter', Helvetica, Arial, sans-serif; 
+        scrollbar-width: thin; 
+    }
     
-    body { background-color: var(--bg-tertiary); color: var(--text-normal); overflow: hidden; height: 100vh; display: flex; }
+    body { 
+        background-color: var(--bg-tertiary); 
+        color: var(--text-normal); 
+        overflow: hidden; 
+        height: 100vh; 
+        display: flex; 
+    }
 
     /* --- Layout Grid --- */
     #app { display: flex; width: 100vw; height: 100%; }
@@ -34,151 +53,181 @@
         width: 48px; height: 48px; border-radius: 50%; background-color: var(--bg-primary); margin-bottom: 8px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; font-weight: bold; position: relative;
     }
     .server-icon:hover, .server-icon.active { border-radius: 16px; background-color: var(--accent); }
-    .server-icon.snap-mode { background-color: var(--snap-yellow); color: black; }
-    .server-icon.tiktok-mode { background: linear-gradient(45deg, #69C9D0, #EE1D52); color: white; }
-    .server-icon.leaderboard-mode { background: linear-gradient(45deg, #FFD700, #F8B500); color: black; }
+    .server-icon.add-server { background-color: #3ba55c; color: white; margin-top: 10px; }
 
     /* 2. Channel List */
     .channel-sidebar {
         width: 240px; background-color: var(--bg-secondary); display: flex; flex-direction: column;
         flex-shrink: 0;
     }
-    .server-header { height: 48px; padding: 12px; font-weight: bold; box-shadow: 0 1px 0 rgba(0,0,0,0.2); cursor: pointer; }
+    .server-header { 
+        height: 48px; 
+        padding: 12px; 
+        font-weight: bold; 
+        box-shadow: 0 1px 0 rgba(0,0,0,0.2); 
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .server-header:hover .settings-icon { opacity: 1; }
+    .settings-icon {
+        opacity: 0.5;
+        transition: opacity 0.2s;
+        cursor: pointer;
+    }
     .channel-list { flex: 1; padding: 10px; overflow-y: auto; }
     .channel-item {
         padding: 6px 8px; margin-bottom: 2px; border-radius: 4px; color: var(--text-muted); cursor: pointer; display: flex; align-items: center;
     }
     .channel-item:hover { background-color: var(--bg-primary); color: var(--text-normal); }
     .channel-item.active { background-color: #393c43; color: white; }
-    .user-panel { height: 52px; background-color: #292b2f; display: flex; align-items: center; padding: 0 8px; }
-    .user-panel .avatar { width: 32px; height: 32px; flex-shrink: 0; }
-    .user-panel .user-info { margin-left: 8px; overflow: hidden; }
-    .user-panel .user-name { font-weight: bold; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .user-panel .user-id { font-size: 11px; color: #b9bbbe; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
+    .user-panel { 
+        height: 52px; 
+        background-color: #292b2f; 
+        display: flex; 
+        align-items: center; 
+        padding: 0 8px; 
+        border-top: 1px solid rgba(0,0,0,0.2);
+        cursor: pointer; 
+    }
+    .user-panel:hover { background-color: #3a3d42; }
 
     /* 3. Main Content Area */
     .main-content { flex: 1; background-color: var(--bg-primary); display: flex; flex-direction: column; position: relative; overflow: hidden; }
     
     /* Chat View */
     .chat-view { height: 100%; display: flex; flex-direction: column; }
-    .chat-header { height: 48px; padding: 0 16px; display: flex; align-items: center; border-bottom: 1px solid rgba(0,0,0,0.2); font-weight: bold; flex-shrink: 0; }
     .message-list { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 16px; }
-    .message { display: flex; gap: 16px; position: relative; }
-    .message:hover { background-color: rgba(0,0,0,0.02); }
-    .avatar { width: 40px; height: 40px; border-radius: 50%; background: gray; flex-shrink: 0; }
-    .msg-content h4 { font-size: 1rem; margin-bottom: 4px; }
-    .msg-timestamp { font-size: 0.7rem; color: var(--text-muted); margin-left: 8px; font-weight: normal; }
-    .msg-text { line-height: 1.4; white-space: pre-wrap; word-break: break-word; }
-    .msg-image { max-width: 300px; border-radius: 8px; margin-top: 5px; }
-    .chat-input-area { padding: 0 16px 24px; margin-top: auto; flex-shrink: 0; }
-    .chat-input-wrapper { background-color: #40444b; border-radius: 8px; padding: 11px; }
-    #message-input { background: transparent; border: none; color: white; width: 100%; outline: none; }
+    .msg-content h4 .owner-tag {
+        background-color: var(--role-owner);
+        color: var(--tiktok-black);
+        padding: 1px 4px;
+        border-radius: 3px;
+        font-size: 0.7rem;
+        margin-left: 8px;
+        font-weight: bold;
+    }
 
+    /* TTS Audio indicator */
+    .tts-indicator {
+        margin-left: 8px;
+        color: var(--success);
+    }
+    
     /* Member List (Right) */
     .member-sidebar { width: 240px; background-color: var(--bg-secondary); padding: 16px; overflow-y: auto; display: none; flex-shrink: 0; }
     .member-sidebar.visible { display: block; }
-    .role-header { text-transform: uppercase; font-size: 12px; color: var(--text-muted); margin-bottom: 8px; margin-top: 16px; }
-    .member-item { display: flex; align-items: center; gap: 10px; padding: 6px; opacity: 0.9; cursor: pointer; }
-    .member-item:hover { background-color: var(--bg-primary); border-radius: 4px; opacity: 1; }
-    .bot-tag { background: var(--accent); font-size: 10px; padding: 1px 4px; border-radius: 3px; margin-left: 5px; }
+    .role-owner-tag { color: var(--role-owner); }
+    .role-admin-tag { color: var(--role-admin); }
+    .role-moderator-tag { color: var(--role-moderator); }
+    .role-member-tag { color: var(--role-member); }
+    .role-bot-tag { color: var(--role-bot); }
 
-    /* --- Snap Mode (Feed) --- */
-    .snap-feed { display: none; flex: 1; overflow-y: auto; padding: 20px; background: #f0f0f0; color: black; }
-    .snap-card {
-        background: white; border-radius: 16px; padding: 16px; margin-bottom: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); position: relative; max-width: 600px; margin-left: auto; margin-right: auto;
-    }
-    .snap-image-container { position: relative; width: 100%; border-radius: 8px; overflow: hidden; background: #eee; }
-    .snap-image-container img { display: block; width: 100%; }
-    .snap-image-container .snap-doodle { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
-    .snap-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-    .ephemeral-timer { margin-left: auto; color: red; font-weight: bold; font-size: 0.9rem; }
-    .snap-actions { display: flex; gap: 15px; margin-top: 10px; color: #666; cursor: pointer; }
-    .snap-create-btn {
-        position: fixed; bottom: 30px; right: 30px; background: var(--snap-yellow); color: black; padding: 15px 25px; border-radius: 30px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 10;
-    }
-
-    /* --- TikTok Mode (Shorts) --- */
-    .shorts-container {
-        display: none; width: 100%; height: 100%; overflow-y: scroll; scroll-snap-type: y mandatory; background: black; position: relative;
-    }
-    .short-video {
-        width: 100%; height: 100%; scroll-snap-align: start; position: relative; display: flex; align-items: center; justify-content: center; background: #000;
-    }
-    .short-video-player {
-        width: 100%; height: 100%; object-fit: contain; /* 'contain' is safer than 'cover' */
-    }
-    .short-overlay {
-        position: absolute; bottom: 0; left: 0; width: 100%; padding: 20px; background: linear-gradient(transparent, rgba(0,0,0,0.8)); display: flex; align-items: flex-end;
-    }
-    .short-info { flex: 1; }
-    .short-actions { display: flex; flex-direction: column; gap: 20px; align-items: center; margin-left: 20px; }
-    .action-btn { text-align: center; font-size: 0.8rem; cursor: pointer; }
-    .action-icon { font-size: 1.5rem; background: rgba(255,255,255,0.2); width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 5px; }
-    .short-create-btn {
-        position: fixed; bottom: 30px; right: 30px; background: white; color: black; padding: 15px; border-radius: 50%; font-weight: bold; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 10; font-size: 1.5rem; line-height: 1;
-    }
+    /* General Styling for other elements remains as before */
+    .avatar { width: 40px; height: 40px; border-radius: 50%; background: gray; flex-shrink: 0; background-size: cover !important; }
     
-    /* --- Leaderboard View --- */
-    .leaderboard-view {
-        display: none; flex: 1; overflow-y: auto; padding: 20px; color: var(--text-normal);
-    }
-    .leaderboard-view h2 { text-align: center; margin-bottom: 20px; }
-    .leaderboard-item {
-        display: flex; align-items: center; background: var(--bg-secondary); padding: 10px 15px; border-radius: 8px; margin-bottom: 10px;
-    }
-    .leaderboard-rank { font-size: 1.2rem; font-weight: bold; width: 40px; }
-    .leaderboard-user { flex: 1; display: flex; align-items: center; gap: 10px; }
-    .leaderboard-user .avatar { width: 40px; height: 40px; }
-    .leaderboard-points { font-size: 1.1rem; font-weight: bold; }
-    
-
     /* Modals */
-    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center; }
-    .modal-content { background: var(--bg-primary); padding: 20px; border-radius: 8px; width: 440px; max-width: 90%; }
-    .modal input, .modal textarea { width: 100%; padding: 10px; margin: 10px 0; background: var(--bg-tertiary); border: none; color: white; border-radius: 4px; }
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; }
+    .modal-content { background: var(--bg-primary); padding: 20px; border-radius: 8px; width: 440px; max-width: 90%; box-shadow: 0 8px 16px rgba(0,0,0,0.5); }
+    .modal input, .modal select, .modal textarea { width: 100%; padding: 10px; margin: 10px 0; background: var(--bg-tertiary); border: none; color: white; border-radius: 4px; }
     .modal input[type="file"] { padding: 10px; background: var(--bg-tertiary); color: var(--text-muted); }
-    #snap-canvas { background: #f0f0f0; border-radius: 4px; cursor: crosshair; margin-top: 10px; }
-    .btn { padding: 10px 20px; background: var(--accent); border: none; color: white; border-radius: 4px; cursor: pointer; }
-    
-    /* Loading Overlay */
-    #loading-overlay { display: none; z-index: 9999; flex-direction: column; }
-    #loading-overlay div { color: white; font-size: 1.2rem; margin-top: 10px; }
-    /* Simple CSS spinner */
-    .spinner { width: 50px; height: 50px; border: 5px solid #555; border-top: 5px solid white; border-radius: 50%; animation: spin 1s linear infinite; }
-    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: transform: rotate(360deg); } }
-    
-    /* Utils */
-    .hidden { display: none !important; }
-
-    /* Responsive */
-    @media (max-width: 768px) {
-        .channel-sidebar, .member-sidebar {
-            display: none; /* Hide sidebars on mobile */
-        }
-        .server-sidebar {
-            width: 60px;
-        }
-        .server-icon {
-            width: 44px; height: 44px;
-        }
-        .member-sidebar.visible {
-            display: none; /* Keep members hidden */
-        }
-        .snap-create-btn { bottom: 20px; right: 20px; }
-        .short-create-btn { bottom: 20px; right: 20px; }
+    .btn { padding: 10px 20px; background: var(--accent); border: none; color: white; border-radius: 4px; cursor: pointer; transition: background 0.2s; }
+    .btn.danger { background: var(--danger); }
+    .btn:hover:not(:disabled) { background: #4752C4; }
+    .btn.danger:hover:not(:disabled) { background: #c8282b; }
+    .google-btn { 
+        background-color: #4285F4; /* Google blue */
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
+    .google-btn:hover { background-color: #357ae8; }
+
+    /* PFP Upload Preview */
+    #pfp-preview { width: 100px; height: 100px; border-radius: 50%; margin: 10px auto; border: 3px solid var(--accent); background: url('https://placehold.co/100x100/72767d/FFFFFF?text=PFP') no-repeat center center / cover; }
+    .modal-tab { padding: 10px; cursor: pointer; border-bottom: 2px solid transparent; }
+    .modal-tab.active { border-bottom-color: var(--accent); font-weight: bold; color: white; }
+    .modal-tab-content { display: none; padding-top: 15px; }
+    .modal-tab-content.active { display: block; }
+    
+    /* Input Group for Auth Modal */
+    .auth-input-group { transition: max-height 0.3s ease-out, opacity 0.3s ease-out; overflow: hidden; }
+    .auth-input-group.collapsed { max-height: 0; opacity: 0; margin: 0; padding: 0; }
+    .auth-input-group.expanded { max-height: 100px; opacity: 1; }
+
 </style>
 
 <!-- Firebase SDKs -->
 <script type="module">
-    // Import Firebase services
+    // --- UTILITY FUNCTIONS (PCM to WAV for TTS) ---
+    function base64ToArrayBuffer(base64) {
+        const binaryString = atob(base64);
+        const len = binaryString.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+        }
+        return bytes.buffer;
+    }
+
+    function pcmToWav(pcm16, sampleRate = 24000) {
+        const numChannels = 1;
+        const bytesPerSample = 2;
+        const blockAlign = numChannels * bytesPerSample;
+        const byteRate = sampleRate * blockAlign;
+        
+        const buffer = new ArrayBuffer(44 + pcm16.length * bytesPerSample);
+        const view = new DataView(buffer);
+        
+        // Write WAV file header
+        // RIFF chunk
+        writeString(view, 0, 'RIFF');
+        view.setUint32(4, 36 + pcm16.length * bytesPerSample, true);
+        writeString(view, 8, 'WAVE');
+        
+        // FMT sub-chunk
+        writeString(view, 12, 'fmt ');
+        view.setUint32(16, 16, true); // Sub-chunk size
+        view.setUint16(20, 1, true);  // Audio format (1 = PCM)
+        view.setUint16(22, numChannels, true);
+        view.setUint32(24, sampleRate, true);
+        view.setUint32(28, byteRate, true);
+        view.setUint16(32, blockAlign, true);
+        view.setUint16(34, bytesPerSample * 8, true); // Bits per sample (16-bit)
+        
+        // DATA sub-chunk
+        writeString(view, 36, 'data');
+        view.setUint32(40, pcm16.length * bytesPerSample, true);
+        
+        // Write PCM data
+        let offset = 44;
+        for (let i = 0; i < pcm16.length; i++, offset += bytesPerSample) {
+            view.setInt16(offset, pcm16[i], true);
+        }
+        
+        return new Blob([buffer], { type: 'audio/wav' });
+    }
+
+    function writeString(view, offset, string) {
+        for (let i = 0; i < string.length; i++) {
+            view.setUint8(offset + i, string.charCodeAt(i));
+        }
+    }
+    // ----------------------------------------------------
+
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { 
         getAuth, 
         signInAnonymously,
         signInWithCustomToken,
-        onAuthStateChanged 
+        onAuthStateChanged,
+        createUserWithEmailAndPassword,
+        signInWithEmailAndPassword,
+        GoogleAuthProvider, // NEW
+        signInWithPopup,     // NEW
+        signOut
     } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { 
         getFirestore, 
@@ -191,385 +240,417 @@
         query, 
         where, 
         onSnapshot,
-        Timestamp, // Removed orderBy and limit to prevent index errors
-        increment,
+        Timestamp, 
         updateDoc,
         setLogLevel
     } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
     import {
         getStorage,
         ref,
-        uploadBytesResumable,
+        uploadBytes,
         getDownloadURL
     } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
     /**
-     * OMNIPLATFORM CORE LOGIC (Full-Featured Edition)
+     * OMNIPLATFORM CORE LOGIC
      */
 
-    // --- Firebase Globals ---
+    // --- Global State ---
     let app, auth, db, storage;
-    let userId, currentUsername, currentUserAvatar;
+    let userId = null;
+    let currentUsername = 'Guest';
+    let currentUserAvatar = 'https://placehold.co/64x64/72767d/FFFFFF?text=?';
     let currentServerId = 's1';
     let currentChannelId = 'c1';
+    let isAuthReady = false; 
     
+    let allUsers = []; 
+    let allServers = []; 
+    let serverRoles = {}; 
+    let isServerOwner = false;
+
     // Firestore Path Globals
     let appId, dbRoot;
     let unsubscribeMessages = null;
     let unsubscribeServers = null;
     let unsubscribeChannels = null;
     let unsubscribeUsers = null;
-    let unsubscribeSnaps = null;
-    let unsubscribeShorts = null;
-    let unsubscribeLeaderboard = null;
-
-    // --- Canvas Globals ---
-    let canvas, ctx, isDrawing = false;
     
-    // --- TikTok Globals ---
-    let intersectionObserver;
+    // TTS configuration
+    const TTS_VOICE = "Puck";
+    const TTS_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=`;
+
 
     // --- Initial Data Seeds ---
     const SEED_DATA = {
         servers: [
-            { id: 's1', name: 'Dev Community', icon: 'D', type: 'discord' },
-            { id: 's2', name: 'Snap Feed', icon: '👻', type: 'snap' },
-            { id: 's3', name: 'TikToks', icon: '🎵', type: 'tiktok' },
-            { id: 's4', name: 'Leaderboard', icon: '🏆', type: 'leaderboard' }
+            { id: 's1', name: 'Dev Community', icon: 'D', type: 'discord', ownerId: 'bot1', description: 'The main hangout for developers and fans.' },
         ],
         channels: {
             's1': [
-                { id: 'c1', name: 'general', type: 'text' },
-                { id: 'c2', name: 'memes', type: 'text' },
-                { id: 'c3', name: 'voice-lounge', type: 'voice' }
+                { id: 'c1', name: 'general', type: 'text', roleAccess: { 'default': 'read/write' } },
+                { id: 'c2', name: 'memes', type: 'text', roleAccess: { 'default': 'read' } },
+                { id: 'c3', name: 'voice-lounge', type: 'voice', roleAccess: { 'default': 'read/write' } }
+            ]
+        },
+        roles: {
+            's1': [
+                { id: 'owner', name: 'Owner', color: '#FEE75C', permissions: { channels: 'all', kick: true, ban: true } },
+                { id: 'admin', name: 'Admin', color: '#E9262C', permissions: { channels: 'all', kick: true, ban: true } },
+                { id: 'member', name: 'Member', color: '#3B72A4', permissions: { channels: 'default', kick: false, ban: false } },
+                { id: 'bot', name: 'Bot', color: '#7289da', permissions: { channels: 'all', kick: false, ban: false } }
             ]
         },
         users: [
-            { id: 'bot1', username: 'ClydeBot', isBot: true, status: 'online', avatar: 'https://ui-avatars.com/api/?name=CB&background=5865F2&color=fff', points: 0, globalRole: 'admin', serverRoles: {} },
-            { id: 'u2', username: 'Sarah_J', isBot: false, status: 'idle', avatar: 'https://placehold.co/64x64/FFC107/FFFFFF?text=SJ', points: 15, globalRole: 'user', serverRoles: {} },
-            { id: 'u3', username: 'MikeTech', isBot: false, status: 'dnd', avatar: 'https://placehold.co/64x64/343A40/FFFFFF?text=MT', points: 8, globalRole: 'user', serverRoles: {} }
+            { id: 'bot1', email: 'bot@omni.com', username: 'ClydeBot', isBot: true, status: 'online', avatar: 'https://placehold.co/64x64/7289da/FFFFFF?text=CB', serverRoles: {'s1': 'bot'} },
         ],
         messages: [
-            { id: 'm1', channelId: 'c1', userId: 'bot1', content: 'Welcome to the server! Try /roll or /joke.', timestamp: Timestamp.now() },
+            { id: 'm1', channelId: 'c1', userId: 'bot1', content: 'Welcome to the Dev Community! Try saying something in the voice lounge (c3) to hear TTS.', timestamp: Timestamp.now() },
         ],
-        snaps: [
-            { id: 'sn1', userId: 'u2', content: 'Check out this view!', imageUrl: 'https://placehold.co/600x400/cccccc/333333?text=Sample+View', doodleUrl: null, expiresAt: Timestamp.fromMillis(Date.now() + 86400000), views: 120, timestamp: Timestamp.now() },
-        ],
-        shorts: [
-            { id: 'sh1', userId: 'u3', caption: 'This is a sample video.', videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4', likes: 1200, comments: 45, timestamp: Timestamp.now() },
-        ]
     };
 
     /**
-     * INITIALIZATION
+     * INITIALIZATION & AUTHENTICATION
      */
     document.addEventListener('DOMContentLoaded', () => {
-        initCanvas();
-        initIntersectionObserver();
         initializeAppFirebase();
         setupInputListeners();
     });
 
-    function initCanvas() {
-        canvas = document.getElementById('snap-canvas');
-        if (!canvas) {
-            console.error("Canvas element not found!");
-            return;
-        }
-        ctx = canvas.getContext('2d');
-        ctx.strokeStyle = '#ED4245'; // Red drawing color
-        ctx.lineWidth = 3;
-        ctx.lineCap = 'round';
-        
-        canvas.addEventListener('mousedown', startDrawing);
-        canvas.addEventListener('mouseup', stopDrawing);
-        canvas.addEventListener('mouseout', stopDrawing);
-        canvas.addEventListener('mousemove', draw);
-    }
-    
-    function initIntersectionObserver() {
-        const options = {
-            root: document.getElementById('view-shorts'),
-            rootMargin: '0px',
-            threshold: 0.8 // 80% of the video must be visible
-        };
-
-        intersectionObserver = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                const video = entry.target;
-                if (entry.isIntersecting) {
-                    video.play().catch(e => console.warn("Video autoplay failed:", e.message));
-                } else {
-                    video.pause();
-                    video.currentTime = 0; // Reset video
-                }
-            });
-        }, options);
-    }
-    
     async function initializeAppFirebase() {
-        // The __app_id is used for setting the Firestore path root (/artifacts/{appId})
         appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         
-        // --- HARDCODED FIREBASE CONFIG FROM USER INPUT ---
-        const firebaseConfig = {
-          "apiKey": "AIzaSyDgs_cNZFe4TS6AoVfOUXalBEoLN42Lvn0",
-          "authDomain": "cosmixserverz.firebaseapp.com",
-          "projectId": "cosmixserverz",
-          "storageBucket": "cosmixserverz.appspot.com",
-          "messagingSenderId": "925350866529",
-          "appId": "1:925350866529:web:e4ffe81d9b0fedfbea0420",
-          "measurementId": "G-6S7RW3183X"
-        };
-        // --------------------------------------------------
+        let firebaseConfig;
+        try {
+            firebaseConfig = JSON.parse(__firebase_config);
+        } catch (e) {
+            console.error("Error parsing __firebase_config, using fallback:", e);
+            firebaseConfig = { apiKey: "", authDomain: "", projectId: "", storageBucket: "" }; 
+        }
 
         try {
             if (!firebaseConfig.apiKey) {
                 console.error("Firebase config is missing or invalid.");
-                document.getElementById('header-channel-name').innerText = "Firebase Config Missing";
                 return;
             }
 
             app = initializeApp(firebaseConfig);
             auth = getAuth(app);
             db = getFirestore(app);
-            storage = getStorage(app); // Initialize Storage
+            storage = getStorage(app); 
             setLogLevel('debug');
 
-            // FIX: dbRoot is now the root artifact path.
             dbRoot = `/artifacts/${appId}`;
+            
+            // Show Auth Modal first and set it to login view
+            showAuthModal('login');
 
             onAuthStateChanged(auth, async (user) => {
+                isAuthReady = true;
                 if (user) {
                     userId = user.uid;
+                    closeModal('modal-auth');
                     await setupUserProfile();
-                    
-                    document.getElementById('user-name').innerText = currentUsername;
-                    document.getElementById('user-avatar').style.backgroundImage = `url('${currentUserAvatar}')`;
-                    document.getElementById('user-id').innerText = userId;
-
                     await seedDatabaseIfNeeded();
                     setupRealtimeListeners();
-                    switchServer(currentServerId, 'discord', 'Dev Community'); // Default
-                    
+                    switchServer(currentServerId, 'discord', 'Dev Community');
                 } else {
-                    console.log("No user found, signing in anonymously...");
-                    const token = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-                    if (token) {
-                        try {
-                            await signInWithCustomToken(auth, token);
-                        } catch (e) {
-                            console.warn("Custom token sign-in failed, falling back to anonymous.", e);
-                            await signInAnonymously(auth);
-                        }
-                    } else {
-                        await signInAnonymously(auth);
-                    }
+                    userId = null;
+                    console.log("User signed out or failed to authenticate.");
+                    showAuthModal('login');
                 }
             });
 
         } catch (error) {
             console.error("Error initializing Firebase:", error);
-            document.getElementById('header-channel-name').innerText = "Firebase Error";
         }
     }
     
-    async function setupUserProfile() {
-        // FIX: Path now includes '/public/data'
-        const userRef = doc(db, `${dbRoot}/public/data/users`, userId);
-        const userSnap = await getDoc(userRef);
+    // --- Auth Modal Display Control ---
+    window.showAuthModal = (view) => {
+        const modal = document.getElementById('modal-auth');
+        const usernameGroup = document.getElementById('auth-username-group');
+        const identifierInput = document.getElementById('auth-identifier');
+        const authTitle = document.getElementById('auth-title');
+        const authSubtitle = document.getElementById('auth-subtitle');
+        const primaryAuthBtn = document.getElementById('primary-auth-btn');
 
-        if (!userSnap.exists()) {
-            const randomName = `User${Math.floor(Math.random() * 9000) + 1000}`;
-            const randomAvatar = `https://placehold.co/64x64/5865F2/FFFFFF?text=${randomName.substring(0,2)}`;
+        if (view === 'signup') {
+            usernameGroup.classList.remove('collapsed');
+            usernameGroup.classList.add('expanded');
+            authTitle.innerText = "Create Your Account";
+            authSubtitle.innerText = "Join the platform with a new account.";
+            identifierInput.placeholder = "Email Address";
+            primaryAuthBtn.innerText = "Sign Up";
+            primaryAuthBtn.onclick = () => handleAuth('signup');
+            document.getElementById('switch-auth-mode').innerHTML = 'Already have an account? <a href="#" onclick="showAuthModal(\'login\'); return false;" class="text-blue-400">Log In</a>';
+        } else { // 'login'
+            usernameGroup.classList.remove('expanded');
+            usernameGroup.classList.add('collapsed');
+            authTitle.innerText = "Welcome Back!";
+            authSubtitle.innerText = "Log in using your email or username.";
+            identifierInput.placeholder = "Email Address or Username";
+            primaryAuthBtn.innerText = "Log In";
+            primaryAuthBtn.onclick = () => handleAuth('login');
+            document.getElementById('switch-auth-mode').innerHTML = "Don't have an account? <a href='#' onclick='showAuthModal(\"signup\"); return false;' class='text-blue-400'>Sign Up</a>";
+        }
+        
+        openModal('modal-auth');
+    }
+
+    // --- Authentication Functions (Updated) ---
+    async function findEmailByUsername(username) {
+        const usersCol = collection(db, `${dbRoot}/public/data/users`);
+        const q = query(usersCol, where('username', '==', username));
+        const snapshot = await getDocs(q);
+        
+        if (!snapshot.empty) {
+            const userData = snapshot.docs[0].data();
+            return userData.email;
+        }
+        return null;
+    }
+
+    window.handleAuth = async (mode) => {
+        const identifier = document.getElementById('auth-identifier').value.trim();
+        const password = document.getElementById('auth-password').value;
+        const username = document.getElementById('auth-username').value.trim();
+        
+        if (mode === 'signup' && (!identifier || !password || !username)) return showCustomAlert("Please fill in Username, Email, and Password.");
+        if (mode === 'login' && (!identifier || !password)) return showCustomAlert("Please fill in Email/Username and Password.");
+        
+        window.showLoading(mode === 'signup' ? "Creating account..." : "Logging in...");
+        
+        try {
+            if (mode === 'signup') {
+                // 1. Check if username exists
+                if (await findEmailByUsername(username)) {
+                    showCustomAlert("Username already taken. Please choose another.");
+                    return;
+                }
+                // 2. Create account
+                const userCredential = await createUserWithEmailAndPassword(auth, identifier, password);
+                await initializeNewUser(userCredential.user.uid, identifier, username);
+            } else { // Login
+                let emailToLogin = identifier;
+                
+                // Check if it's a username login
+                if (!identifier.includes('@')) {
+                    emailToLogin = await findEmailByUsername(identifier);
+                    if (!emailToLogin) {
+                        showCustomAlert("Login failed: User not found or invalid credentials.");
+                        return;
+                    }
+                }
+                
+                await signInWithEmailAndPassword(auth, emailToLogin, password);
+            }
+        } catch (error) {
+            let message = error.message.includes('auth/invalid-credential') ? 'Invalid email/username or password.' : error.message;
+            showCustomAlert(`Authentication Failed: ${message}`);
+        } finally {
+            window.hideLoading();
+        }
+    }
+    
+    window.signInWithGoogle = async () => {
+        window.showLoading("Signing in with Google...");
+        try {
+            const provider = new GoogleAuthProvider();
+            const result = await signInWithPopup(auth, provider);
+            const user = result.user;
+
+            const userRef = doc(db, `${dbRoot}/public/data/users`, user.uid);
+            const userSnap = await getDoc(userRef);
+
+            // If new user, initialize their profile
+            if (!userSnap.exists()) {
+                const displayName = user.displayName || user.email.split('@')[0];
+                await initializeNewUser(user.uid, user.email, displayName, user.photoURL);
+            }
             
-            const newUser = {
-                id: userId,
-                username: randomName,
-                isBot: false,
-                status: 'online',
-                avatar: randomAvatar,
-                points: 0,
-                globalRole: 'user',
-                serverRoles: {}
-            };
-            await setDoc(userRef, newUser);
-            currentUsername = newUser.username;
-            currentUserAvatar = newUser.avatar;
-        } else {
-            const userData = userSnap.data();
-            currentUsername = userData.username;
-            currentUserAvatar = userData.avatar;
-            await setDoc(userRef, { status: 'online' }, { merge: true });
+        } catch (error) {
+            console.error("Google Sign-In Error:", error);
+            showCustomAlert(`Google Sign-In Failed: ${error.message}`);
+        } finally {
+            window.hideLoading();
         }
     }
 
+    async function initializeNewUser(uid, email, username, avatar = null) {
+        const userRef = doc(db, `${dbRoot}/public/data/users`, uid);
+        const defaultAvatar = avatar || `https://placehold.co/64x64/5865F2/FFFFFF?text=${username.substring(0,2)}`;
+        
+        const newUser = {
+            id: uid,
+            email: email,
+            username: username, 
+            isBot: false,
+            status: 'online',
+            avatar: defaultAvatar,
+            globalRole: 'user',
+            serverRoles: { 's1': 'member' } // Default membership to S1
+        };
+        await setDoc(userRef, newUser);
+    }
+    
+    window.logOut = async () => {
+        try {
+            await signOut(auth);
+            showCustomAlert("Successfully signed out. Please log in again.");
+        } catch (error) {
+            console.error("Logout error:", error);
+        }
+    }
+
+    // --- Profile Setup (Remains the same) ---
+    async function setupUserProfile() {
+        if (!userId) return;
+        const userRef = doc(db, `${dbRoot}/public/data/users`, userId);
+        const userSnap = await getDoc(userRef);
+
+        if (userSnap.exists()) {
+            const userData = userSnap.data();
+            currentUsername = userData.username;
+            currentUserAvatar = userData.avatar;
+            
+            // Update UI
+            document.getElementById('user-name').innerText = currentUsername;
+            document.getElementById('user-avatar').style.backgroundImage = `url('${currentUserAvatar}')`;
+            document.getElementById('user-id').innerText = userId.substring(0, 8) + '...'; 
+            document.getElementById('copy-user-id').onclick = () => copyTextToClipboard(userId);
+            document.getElementById('user-panel').onclick = () => openModal('modal-user-settings');
+        }
+    }
+    
+    // --- Database Seeding (Remains the same) ---
     async function seedDatabaseIfNeeded() {
-        // FIX: Path now includes '/public/data'
         const configRef = doc(db, `${dbRoot}/public/data/app-config`, 'config');
         const configSnap = await getDoc(configRef);
 
         if (!configSnap.exists()) {
             console.log("No config found. Seeding database...");
-
-            // FIX: All paths updated to include '/public/data'
+            
             for (const user of SEED_DATA.users) await setDoc(doc(db, `${dbRoot}/public/data/users`, user.id), user);
-            for (const server of SEED_DATA.servers) await setDoc(doc(db, `${dbRoot}/public/data/servers`, server.id), server);
-            for (const channel of SEED_DATA.channels['s1']) await setDoc(doc(db, `${dbRoot}/public/data/servers/s1/channels`, channel.id), channel);
-            for (const msg of SEED_DATA.messages) await setDoc(doc(db, `${dbRoot}/public/data/messages`, msg.id), msg);
-            for (const snap of SEED_DATA.snaps) await setDoc(doc(db, `${dbRoot}/public/data/snaps`, snap.id), snap);
-            for (const short of SEED_DATA.shorts) await setDoc(doc(db, `${dbRoot}/public/data/shorts`, short.id), short);
+            
+            for (const server of SEED_DATA.servers) {
+                await setDoc(doc(db, `${dbRoot}/public/data/servers`, server.id), server);
+                for (const channel of SEED_DATA.channels[server.id]) {
+                    await setDoc(doc(db, `${dbRoot}/public/data/servers/${server.id}/channels`, channel.id), channel);
+                }
+                for (const role of SEED_DATA.roles[server.id]) {
+                    await setDoc(doc(db, `${dbRoot}/public/data/servers/${server.id}/roles`, role.id), role);
+                }
+            }
+            
+            for (const msg of SEED_DATA.messages) await addDoc(collection(db, `${dbRoot}/public/data/messages`), msg);
 
             await setDoc(configRef, { initialized: true });
             console.log("Database seeding complete.");
-        } else {
-            console.log("Database already initialized.");
         }
     }
     
-    /**
-     * REAL-TIME LISTENERS (onSnapshot)
-     */
+    // --- Real-time Listeners (Remains the same) ---
     function setupRealtimeListeners() {
-        // Unsubscribe from all old listeners
-        if (unsubscribeServers) unsubscribeServers();
-        if (unsubscribeUsers) unsubscribeUsers();
-        if (unsubscribeSnaps) unsubscribeSnaps();
-        if (unsubscribeShorts) unsubscribeShorts();
-        if (unsubscribeLeaderboard) unsubscribeLeaderboard();
+        if (!isAuthReady) return;
+        [unsubscribeServers, unsubscribeUsers].forEach(unsub => unsub && unsub());
 
-        // FIX: Path now includes '/public/data'
         const serversQuery = query(collection(db, `${dbRoot}/public/data/servers`));
         unsubscribeServers = onSnapshot(serversQuery, (snapshot) => {
-            const servers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            renderServerList(servers);
+            allServers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            renderServerList(allServers);
         });
         
-        // FIX: Path now includes '/public/data'
         const usersQuery = query(collection(db, `${dbRoot}/public/data/users`));
         unsubscribeUsers = onSnapshot(usersQuery, (snapshot) => {
-            const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            renderMembers(users);
-        });
-        
-        // FIX: Removed orderBy and limit to avoid index requirement. Sort and limit in memory.
-        const leaderboardQuery = query(collection(db, `${dbRoot}/public/data/users`), where('isBot', '==', false));
-        unsubscribeLeaderboard = onSnapshot(leaderboardQuery, (snapshot) => {
-            let users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-            // Sort in memory by points descending
-            users.sort((a, b) => (b.points || 0) - (a.points || 0));
-
-            // Limit to top 20
-            const topUsers = users.slice(0, 20);
-            
-            renderLeaderboard(topUsers);
-        });
-        
-        // FIX: Path now includes '/public/data'
-        const snapsQuery = query(collection(db, `${dbRoot}/public/data/snaps`)); // Removed orderBy
-        unsubscribeSnaps = onSnapshot(snapsQuery, (snapshot) => {
-            let snaps = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            // Sort in memory
-            snaps.sort((a, b) => (b.timestamp?.toMillis() || 0) - (a.timestamp?.toMillis() || 0));
-            renderSnapFeed(snaps);
-        });
-
-        // FIX: Path now includes '/public/data'
-        const shortsQuery = query(collection(db, `${dbRoot}/public/data/shorts`)); // Removed orderBy
-        unsubscribeShorts = onSnapshot(shortsQuery, (snapshot) => {
-            let shorts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            // Sort in memory
-            shorts.sort((a, b) => (b.timestamp?.toMillis() || 0) - (a.timestamp?.toMillis() || 0));
-            renderShorts(shorts);
+            allUsers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const currentServer = allServers.find(s => s.id === currentServerId);
+            if (currentServer && currentServer.type === 'discord') {
+                 renderMembers(currentServerId);
+            }
         });
     }
 
-    /**
-     * RENDERING FUNCTIONS
-     */
+    // --- Rendering Functions (Remains the same) ---
     function renderServerList(servers) {
         const list = document.getElementById('server-list');
         if (!list) return;
-        list.innerHTML = '';
+        
+        const existingIcons = list.querySelectorAll('.server-icon:not(.add-server)');
+        existingIcons.forEach(icon => icon.remove());
+        
+        const addServerIcon = list.querySelector('.add-server');
         
         servers.forEach(server => {
+            if (server.type !== 'discord') return; 
+
             const el = document.createElement('div');
             el.className = `server-icon ${server.id === currentServerId ? 'active' : ''}`;
-            if (server.type === 'snap') el.classList.add('snap-mode');
-            if (server.type === 'tiktok') el.classList.add('tiktok-mode');
-            if (server.type === 'leaderboard') el.classList.add('leaderboard-mode');
             
             el.innerText = server.icon;
             el.title = server.name;
             el.onclick = () => switchServer(server.id, server.type, server.name);
-            list.appendChild(el);
+            list.insertBefore(el, addServerIcon);
         });
     }
     
     function switchServer(serverId, serverType, serverName) {
         currentServerId = serverId;
         
-        const serverIcons = document.querySelectorAll('.server-icon');
-        serverIcons.forEach(icon => icon.classList.remove('active'));
-        const activeIcon = Array.from(serverIcons).find(icon => icon.title === serverName);
+        document.querySelectorAll('.server-icon').forEach(icon => icon.classList.remove('active'));
+        const activeIcon = document.querySelector(`.server-icon[title="${serverName}"]`);
         if (activeIcon) activeIcon.classList.add('active');
 
-        // View Switching Logic
+        const viewChat = document.getElementById('view-chat');
         const channelSidebar = document.getElementById('channel-sidebar');
         const memberSidebar = document.getElementById('member-sidebar');
-        const viewChat = document.getElementById('view-chat');
-        const viewSnap = document.getElementById('view-snap');
-        const viewShorts = document.getElementById('view-shorts');
-        const viewLeaderboard = document.getElementById('view-leaderboard');
 
-        viewChat.style.display = 'none';
-        viewSnap.style.display = 'none';
-        viewShorts.style.display = 'none';
-        viewLeaderboard.style.display = 'none';
+        document.querySelectorAll('#main-content > div').forEach(v => v.style.display = 'none');
         
         if (serverType === 'discord') {
+            viewChat.style.display = 'flex';
             channelSidebar.style.display = 'flex';
             memberSidebar.style.display = 'block';
-            viewChat.style.display = 'flex';
-            document.getElementById('server-name').innerText = serverName;
-            setupChannelListener(serverId);
-            
-        } else if (serverType === 'snap') {
-            channelSidebar.style.display = 'none';
-            memberSidebar.style.display = 'none';
-            viewSnap.style.display = 'block';
+            document.getElementById('server-name-display').innerText = serverName;
 
-        } else if (serverType === 'tiktok') {
-            channelSidebar.style.display = 'none';
-            memberSidebar.style.display = 'none';
-            viewShorts.style.display = 'block';
+            const currentServer = allServers.find(s => s.id === serverId);
+            isServerOwner = currentServer && currentServer.ownerId === userId;
+            document.getElementById('server-settings-btn').style.display = isServerOwner ? 'inline-block' : 'none';
             
-        } else if (serverType === 'leaderboard') {
-            channelSidebar.style.display = 'none';
-            memberSidebar.style.display = 'none';
-            viewLeaderboard.style.display = 'block';
+            setupChannelListener(serverId);
+            setupRoleListener(serverId); 
+            renderMembers(serverId); 
         }
     }
     
     function setupChannelListener(serverId) {
         if (unsubscribeChannels) unsubscribeChannels();
         
-        // FIX: Path now includes '/public/data'
         const channelsQuery = query(collection(db, `${dbRoot}/public/data/servers/${serverId}/channels`));
         unsubscribeChannels = onSnapshot(channelsQuery, (snapshot) => {
             const channels = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            renderChannelList(channels);
             
             const channelExists = channels.some(c => c.id === currentChannelId);
-            if ((!channelExists && channels.length > 0) || (currentServerId !== serverId && channels.length > 0)) {
-                switchChannel(channels[0].id, channels[0].name);
-            } else if (channels.length > 0) {
-                switchChannel(currentChannelId, document.getElementById('header-channel-name').innerText);
+            if (!channelExists && channels.length > 0) {
+                currentChannelId = channels[0].id;
+            }
+            
+            const activeChannel = channels.find(c => c.id === currentChannelId) || channels[0];
+            if (activeChannel) {
+                renderChannelList(channels);
+                switchChannel(activeChannel.id, activeChannel.name, activeChannel.type);
             }
         });
     }
 
+    function setupRoleListener(serverId) {
+        const rolesQuery = query(collection(db, `${dbRoot}/public/data/servers/${serverId}/roles`));
+        onSnapshot(rolesQuery, (snapshot) => {
+            serverRoles[serverId] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            renderServerRoles(); 
+        });
+    }
+    
     function renderChannelList(channels) {
         const list = document.getElementById('channel-list');
         list.innerHTML = '';
@@ -577,12 +658,21 @@
             const el = document.createElement('div');
             el.className = `channel-item ${ch.id === currentChannelId ? 'active' : ''}`;
             el.innerHTML = `${ch.type === 'voice' ? '🔊' : '#'} ${ch.name}`;
-            el.onclick = () => switchChannel(ch.id, ch.name);
+            el.onclick = () => switchChannel(ch.id, ch.name, ch.type);
             list.appendChild(el);
         });
+        
+        if (isServerOwner) {
+             list.innerHTML += `
+                <hr class="my-2 border-gray-600">
+                <div class="channel-item" onclick="openModal('modal-create-channel')">
+                    <span style="color: var(--success); margin-right: 5px;">+</span> Create Channel
+                </div>
+             `;
+        }
     }
 
-    function switchChannel(channelId, channelName) {
+    function switchChannel(channelId, channelName, channelType) {
         currentChannelId = channelId;
         
         document.querySelectorAll('.channel-item').forEach(item => {
@@ -592,10 +682,20 @@
         document.getElementById('header-channel-name').innerText = channelName;
         document.getElementById('message-input').placeholder = `Message #${channelName}`;
         
+        const messageList = document.getElementById('message-list');
+        messageList.innerHTML = ''; 
+        
+        if (channelType === 'voice') {
+            messageList.innerHTML = `
+                <div class="message" style="background-color: #393c43; border-radius: 8px; padding: 10px;">
+                    <span style="font-size: 1.2rem; color: var(--success);">🔊 Connected to **${channelName}**</span>
+                    <p style="color: var(--text-muted); margin-top: 5px;">Send a message to hear the **Text-to-Speech** (TTS) feature!</p>
+                </div>
+            `;
+        }
+
         if (unsubscribeMessages) unsubscribeMessages();
         
-        // FIX: Path now includes '/public/data'
-        // FIX: Removed orderBy from query to prevent index error. Sorting is now done in the listener.
         const messagesQuery = query(
             collection(db, `${dbRoot}/public/data/messages`), 
             where("channelId", "==", channelId)
@@ -603,14 +703,7 @@
         
         unsubscribeMessages = onSnapshot(messagesQuery, (snapshot) => {
             let messages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            
-            // Sort messages by timestamp ascending in memory
-            messages.sort((a, b) => {
-                const timeA = a.timestamp?.toMillis() || 0;
-                const timeB = b.timestamp?.toMillis() || 0;
-                return timeA - timeB;
-            });
-
+            messages.sort((a, b) => (a.timestamp?.toMillis() || 0) - (b.timestamp?.toMillis() || 0));
             renderMessages(messages);
         }, (error) => console.error("Error getting messages:", error));
     }
@@ -619,385 +712,479 @@
         const list = document.getElementById('message-list');
         if (!list) return;
         
-        // FIX: Path now includes '/public/data'
-        const usersQuery = query(collection(db, `${dbRoot}/public/data/users`));
-        const usersSnapshot = await getDocs(usersQuery);
-        const userMap = {};
-        usersSnapshot.forEach(doc => {
-            userMap[doc.id] = doc.data();
-        });
-
-        list.innerHTML = '';
+        const isScrolledToBottom = list.scrollHeight - list.clientHeight <= list.scrollTop + 1;
         
+        const voiceBanner = list.querySelector('.message[style*="background-color: #393c43"]');
+        list.innerHTML = '';
+        if (voiceBanner) list.appendChild(voiceBanner);
+
+        const userMap = {};
+        allUsers.forEach(u => userMap[u.id] = u);
+
         messages.forEach(msg => {
-            const user = userMap[msg.userId] || { username: 'Unknown', avatar: '', isBot: false };
+            const user = userMap[msg.userId] || { username: 'Unknown', avatar: '', isBot: false, serverRoles: {} };
             const el = document.createElement('div');
             el.className = 'message';
             
             const date = msg.timestamp?.toDate() || new Date();
             const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            const userRole = user.serverRoles?.[currentServerId];
+            const isOwner = allServers.find(s => s.id === currentServerId)?.ownerId === msg.userId;
+            const ownerTag = isOwner ? '<span class="owner-tag">OWNER</span>' : '';
+            const ttsIndicator = msg.tts ? '<span class="tts-indicator">🗣️</span>' : '';
 
             el.innerHTML = `
-                <img src="${user.avatar}" class="avatar" onerror="this.src='https://placehold.co/40x40/72767d/FFFFFF?text=?'">
+                <div class="avatar" style="background: url('${user.avatar}') no-repeat center center / cover;"></div>
                 <div class="msg-content">
-                    <h4>${user.username} ${user.isBot ? '<span class="bot-tag">BOT</span>' : ''} <span class="msg-timestamp">${timeStr}</span></h4>
-                    <div class="msg-text">${formatText(msg.content)}</div>
-                    ${msg.image ? `<img src="${msg.image}" class="msg-image">` : ''}
+                    <h4>${user.username} ${ownerTag} ${ttsIndicator}
+                        <span class="msg-timestamp">${timeStr}</span>
+                    </h4>
+                    <div class="msg-text">${msg.content}</div>
                 </div>
             `;
             list.appendChild(el);
         });
-        list.scrollTop = list.scrollHeight;
+
+        if (isScrolledToBottom) {
+            list.scrollTop = list.scrollHeight;
+        }
     }
 
-    function renderMembers(users) {
-        const botList = document.getElementById('member-list-bots');
-        const userList = document.getElementById('member-list-users');
-        if (!botList || !userList) return;
+    function renderMembers(serverId) {
+        const list = document.getElementById('member-list-container');
+        if (!list) return;
         
-        botList.innerHTML = '';
-        userList.innerHTML = '';
-
-        users.forEach(u => { // 'u' is the user object
-            const el = document.createElement('div');
-            el.className = 'member-item';
+        const serverUsers = allUsers.filter(u => u.serverRoles?.[serverId] || allServers.find(s => s.id === serverId)?.ownerId === u.id || u.isBot);
+        
+        const roleGroups = { 'owner': [], 'admin': [], 'moderator': [], 'member': [], 'bot': [] };
+        
+        serverUsers.forEach(u => {
+            const server = allServers.find(s => s.id === serverId);
+            let role = u.serverRoles?.[serverId];
             
-            let statusColor = '';
-            if (u.status === 'dnd') statusColor = 'color:#ed4245';
-            if (u.status === 'idle') statusColor = 'color:#faa61a';
+            if (server && server.ownerId === u.id) {
+                role = 'owner';
+            } else if (u.isBot) {
+                role = 'bot';
+            } else if (!role) {
+                role = 'member'; 
+            }
             
-            // FIX: Correctly using loop variable 'u'
-            el.innerHTML = `
-                <img src="${u.avatar}" class="avatar" style="width:32px;height:32px" onerror="this.src='https://placehold.co/40x40/72767d/FFFFFF?text=?'">
-                <span style="${statusColor}">${u.username} (${u.points || 0} pts)</span>
-                ${u.isBot ? '<span class="bot-tag">BOT</span>' : ''}
-            `;
-            if(u.isBot) botList.appendChild(el);
-            else userList.appendChild(el);
+            if (roleGroups[role]) {
+                roleGroups[role].push(u);
+            }
         });
-    }
 
-    function formatText(text) {
-        if (!text) return '';
-        return text.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\*(.*?)\*/g, '<i>$1</i>');
-    }
-
-    async function renderSnapFeed(snaps) {
-        const container = document.getElementById('snap-container');
-        if (!container) return;
-        container.innerHTML = '';
-        const now = Date.now();
+        const sortedRoles = ['owner', 'admin', 'moderator', 'member', 'bot'];
         
-        // FIX: Path now includes '/public/data'
-        const usersQuery = query(collection(db, `${dbRoot}/public/data/users`));
-        const usersSnapshot = await getDocs(usersQuery);
-        const userMap = {};
-        usersSnapshot.forEach(doc => userMap[doc.id] = doc.data());
-
-        snaps.forEach(snap => {
-            const expires = snap.expiresAt?.toMillis() || 0;
-            if (expires < now) return; // Expired
-            
-            const user = userMap[snap.userId] || { username: 'Unknown', avatar: ''};
-            const timeLeft = Math.max(0, Math.floor((expires - now) / 60000));
-            const hoursLeft = Math.floor(timeLeft / 60);
-            
-            const card = document.createElement('div');
-            card.className = 'snap-card';
-            card.innerHTML = `
-                <div class="snap-header">
-                    <img src="${user.avatar}" class="avatar" onerror="this.src='https://placehold.co/40x40/72767d/FFFFFF?text=?'">
-                    <strong>${user.username}</strong>
-                    <span class="ephemeral-timer">⏳ ${hoursLeft}h ${timeLeft % 60}m left</span>
-                </div>
-                <div>${snap.content}</div>
-                <div class="snap-image-container" style="${!snap.imageUrl ? 'display:none' : ''}">
-                    <img src="${snap.imageUrl}" style="width:100%; border-radius:8px; margin-top:10px;" onerror="this.style.display='none'">
-                    ${snap.doodleUrl ? `<img src="${snap.doodleUrl}" class="snap-doodle">` : ''}
-                </div>
-                <div class="snap-actions">
-                    <span>👁️ ${snap.views}</span>
-                    <span>❤️ Like</span>
-                    <span>💬 Reply</span>
-                </div>
-            `;
-            container.appendChild(card);
-        });
-    }
-
-    async function renderShorts(shorts) {
-        const container = document.getElementById('view-shorts');
-        if (!container) return;
-        container.innerHTML = '';
+        list.innerHTML = '';
         
-        // FIX: Path now includes '/public/data'
-        const usersQuery = query(collection(db, `${dbRoot}/public/data/users`));
-        const usersSnapshot = await getDocs(usersQuery);
-        const userMap = {};
-        usersSnapshot.forEach(doc => userMap[doc.id] = doc.data());
-        
-        shorts.forEach(short => {
-            const user = userMap[short.userId] || { username: 'Unknown', avatar: ''};
-            const el = document.createElement('div');
-            el.className = 'short-video';
+        sortedRoles.forEach(roleKey => {
+            const usersInRole = roleGroups[roleKey].sort((a, b) => a.username.localeCompare(b.username));
             
-            el.innerHTML = `
-                <video class="short-video-player" src="${short.videoUrl}" loop muted playsinline onerror="this.style.display='none';"></video>
-                <div class="short-overlay">
-                    <div class="short-info">
-                        <h3>@${user.username}</h3>
-                        <p>${short.caption}</p>
-                        <p>🎵 Original Sound - ${user.username}</p>
-                    </div>
-                    <div class="short-actions">
-                        <div class="action-btn"><div class="action-icon"><img src="${user.avatar}" style="width:100%;height:100%;border-radius:50%" onerror="this.src='https://placehold.co/40x40/72767d/FFFFFF?text=?'"></div></div>
-                        <div class="action-btn"><div class="action-icon">❤️</div>${short.likes}</div>
-                        <div class="action-btn"><div class="action-icon">💬</div>${short.comments}</div>
-                        <div class="action-btn"><div class="action-icon">➡️</div>Share</div>
-                    </div>
-                </div>
-            `;
-            container.appendChild(el);
-            
-            // Add video to observer
-            const videoEl = el.querySelector('video');
-            if (videoEl) {
-                intersectionObserver.observe(videoEl);
+            if (usersInRole.length > 0) {
+                const header = document.createElement('div');
+                header.className = 'role-header';
+                header.innerText = `${roleKey.toUpperCase()}S (${usersInRole.length})`;
+                list.appendChild(header);
+                
+                usersInRole.forEach(u => {
+                    const el = document.createElement('div');
+                    el.className = 'member-item';
+                    
+                    const roleName = u.serverRoles?.[serverId] || roleKey; 
+                    const roleColorClass = `role-${roleName.toLowerCase()}-tag`;
+
+                    el.innerHTML = `
+                        <div class="avatar" style="width:32px;height:32px; background: url('${u.avatar}') no-repeat center center / cover;"></div>
+                        <div class="member-name-container">
+                            <span>${u.username}</span>
+                            <span class="text-xs ${roleColorClass}">${roleName.toUpperCase()}</span>
+                        </div>
+                    `;
+                    list.appendChild(el);
+                });
             }
         });
     }
-    
-    function renderLeaderboard(users) {
-        const container = document.getElementById('leaderboard-container');
-        if (!container) return;
-        container.innerHTML = '';
-        
-        users.forEach((user, index) => {
-            const el = document.createElement('div');
-            el.className = 'leaderboard-item';
-            el.innerHTML = `
-                <div class="leaderboard-rank">#${index + 1}</div>
-                <div class="leaderboard-user">
-                    <img src="${user.avatar}" class="avatar" onerror="this.src='https://placehold.co/40x40/72767d/FFFFFF?text=?'">
-                    <span>${user.username}</span>
-                </div>
-                <div class="leaderboard-points">${user.points || 0} pts</div>
-            `;
-            container.appendChild(el);
-        });
-    }
 
-    /**
-     * EVENT HANDLERS & ACTIONS
-     */
+    // --- Event Handlers & Actions (Remains the same) ---
      function setupInputListeners() {
         document.getElementById('message-input').addEventListener('keypress', async function (e) {
             if (e.key === 'Enter' && this.value.trim()) {
                 const content = this.value.trim();
                 this.value = '';
                 
-                const newMsg = {
-                    channelId: currentChannelId,
-                    userId: userId,
-                    content: content,
-                    timestamp: Timestamp.now()
-                };
-                
-                try {
-                    // FIX: Path now includes '/public/data'
-                    await addDoc(collection(db, `${dbRoot}/public/data/messages`), newMsg);
-                    await updateUserPoints(1); // +1 point for message
-                    await processBotCommands(content);
-                } catch (error) {
-                    console.error("Error sending message: ", error);
-                }
+                await sendMessage(content);
             }
         });
      }
 
-    async function processBotCommands(text) {
-        const args = text.split(' ');
-        const command = args[0].toLowerCase();
-        let botResponse = null;
-
-        if (command === '/roll') {
-            const roll = Math.floor(Math.random() * 100) + 1;
-            botResponse = `🎲 @${currentUsername} rolled a **${roll}**!`;
-        } else if (command === '/joke') {
-            const jokes = ["Why do JS devs wear glasses? Because they don't C#.", "I'm a real-time app now!"];
-            botResponse = jokes[Math.floor(Math.random() * jokes.length)];
-        } else if (command === '/poll') {
-            const question = args.slice(1).join(' ');
-            botResponse = `📊 **Poll:** ${question || 'Yes or No?'}\n1️⃣ Yes\n2️⃣ No`;
-        }
-
-        if (botResponse) {
-            const botMsg = {
-                channelId: currentChannelId,
-                userId: 'bot1',
-                content: botResponse,
-                timestamp: Timestamp.now()
-            };
-            // FIX: Path now includes '/public/data'
-            await addDoc(collection(db, `${dbRoot}/public/data/messages`), botMsg);
+    async function sendMessage(content) {
+        const currentChannel = document.querySelector(`.channel-item.active`);
+        const channelType = currentChannel?.innerText.includes('🔊') ? 'voice' : 'text';
+        
+        const newMsg = {
+            channelId: currentChannelId,
+            serverId: currentServerId,
+            userId: userId,
+            content: content,
+            tts: channelType === 'voice', 
+            timestamp: Timestamp.now()
+        };
+        
+        try {
+            const messageRef = await addDoc(collection(db, `${dbRoot}/public/data/messages`), newMsg);
+            
+            if (channelType === 'voice') {
+                await generateAndPlayTTS(content, messageRef.id);
+            }
+        } catch (error) {
+            console.error("Error sending message: ", error);
         }
     }
     
-    async function updateUserPoints(amount) {
+    // --- TTS Logic (Remains the same) ---
+    async function generateAndPlayTTS(text, messageId) {
+        window.showLoading("Generating voice...");
         try {
-            // FIX: Path now includes '/public/data'
-            const userRef = doc(db, `${dbRoot}/public/data/users`, userId);
-            await updateDoc(userRef, { points: increment(amount) });
+            const payload = {
+                contents: [{
+                    parts: [{ text: `Say in a cheerful voice: ${text}` }]
+                }],
+                generationConfig: {
+                    responseModalities: ["AUDIO"],
+                    speechConfig: {
+                        voiceConfig: {
+                            prebuiltVoiceConfig: { voiceName: TTS_VOICE }
+                        }
+                    }
+                },
+            };
+            
+            const response = await fetch(TTS_API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await response.json();
+            const part = result?.candidates?.[0]?.content?.parts?.[0];
+            const audioData = part?.inlineData?.data;
+            const mimeType = part?.inlineData?.mimeType;
+
+            if (audioData && mimeType && mimeType.startsWith("audio/L16")) {
+                const sampleRateMatch = mimeType.match(/rate=(\d+)/);
+                const sampleRate = sampleRateMatch ? parseInt(sampleRateMatch[1], 10) : 24000;
+                
+                const pcmData = base64ToArrayBuffer(audioData);
+                const pcm16 = new Int16Array(pcmData);
+                const wavBlob = pcmToWav(pcm16, sampleRate);
+                const audioUrl = URL.createObjectURL(wavBlob);
+                
+                const audio = new Audio(audioUrl);
+                audio.play();
+
+                audio.onended = () => {
+                    URL.revokeObjectURL(audioUrl);
+                    window.hideLoading();
+                };
+            } else {
+                console.error("TTS response was invalid or missing audio data.");
+                showCustomAlert("Could not generate voice. TTS API failed.");
+            }
+
         } catch (error) {
-            console.error("Error updating points:", error);
+            console.error("Error generating TTS:", error);
+            showCustomAlert("Error generating TTS. Check console for details.");
+        } finally {
+            window.hideLoading();
         }
     }
 
-    // Make modal functions global
-    window.openModal = (id) => document.getElementById(id).style.display = 'flex';
+
+    // --- Server/Channel Creation/Settings Logic (Remains the same) ---
+    window.createServer = async () => {
+        const name = document.getElementById('server-name-input').value.trim();
+        const icon = document.getElementById('server-icon-input').value.trim() || name.substring(0, 1).toUpperCase();
+        
+        if (!name) return showCustomAlert("Server name is required.");
+
+        window.showLoading("Creating server...");
+        try {
+            const newServerRef = doc(collection(db, `${dbRoot}/public/data/servers`));
+            const newServerId = newServerRef.id;
+            
+            const newServer = {
+                id: newServerId,
+                name: name,
+                icon: icon,
+                type: 'discord',
+                ownerId: userId,
+                createdAt: Timestamp.now()
+            };
+            await setDoc(newServerRef, newServer);
+
+            const defaultRoles = [
+                { id: 'owner', name: 'Owner', color: '#FEE75C', permissions: { channels: 'all', kick: true, ban: true } },
+                { id: 'admin', name: 'Admin', color: '#E9262C', permissions: { channels: 'all', kick: true, ban: true } },
+                { id: 'member', name: 'Member', color: '#3B72A4', permissions: { channels: 'default', kick: false, ban: false } }
+            ];
+            for (const role of defaultRoles) {
+                 await setDoc(doc(db, `${dbRoot}/public/data/servers/${newServerId}/roles`, role.id), role);
+            }
+
+            await setDoc(doc(db, `${dbRoot}/public/data/servers/${newServerId}/channels`, 'general'), { id: 'general', name: 'general', type: 'text', roleAccess: { 'default': 'read/write' } });
+            await setDoc(doc(db, `${dbRoot}/public/data/servers/${newServerId}/channels`, 'lounge'), { id: 'lounge', name: 'voice-lounge', type: 'voice', roleAccess: { 'default': 'read/write' } });
+            
+            const userRef = doc(db, `${dbRoot}/public/data/users`, userId);
+            const userSnap = await getDoc(userRef);
+            if (userSnap.exists()) {
+                const userData = userSnap.data();
+                const newRoles = { ...userData.serverRoles, [newServerId]: 'owner' };
+                await updateDoc(userRef, { serverRoles: newRoles });
+            }
+
+            closeModal('modal-create-server');
+            document.getElementById('server-name-input').value = '';
+            document.getElementById('server-icon-input').value = '';
+
+            switchServer(newServerId, 'discord', name);
+        } catch (error) {
+            console.error("Error creating server:", error);
+            showCustomAlert("Failed to create server. See console.");
+        } finally {
+            window.hideLoading();
+        }
+    }
+    
+    window.createChannel = async () => {
+        const name = document.getElementById('channel-name-input').value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-');
+        const type = document.getElementById('channel-type-input').value;
+
+        if (!name) {
+            return showCustomAlert("Channel name is required.");
+        }
+        if (currentServerId.startsWith('s')) { 
+            return showCustomAlert("Cannot add channels to base system servers (s1-s5).");
+        }
+
+        window.showLoading("Creating channel...");
+        try {
+            const newChannelRef = doc(db, `${dbRoot}/public/data/servers/${currentServerId}/channels`, name);
+            await setDoc(newChannelRef, {
+                id: name,
+                name: name,
+                type: type,
+                roleAccess: { 'default': 'read/write' },
+                createdAt: Timestamp.now()
+            });
+
+            closeModal('modal-create-channel');
+            document.getElementById('channel-name-input').value = '';
+        } catch (error) {
+            console.error("Error creating channel:", error);
+            showCustomAlert("Failed to create channel. See console.");
+        } finally {
+            window.hideLoading();
+        }
+    }
+
+    window.openServerSettings = () => {
+        if (!isServerOwner) {
+            return showCustomAlert("Only the server owner can access these settings.");
+        }
+        
+        renderServerRoles();
+        
+        openModal('modal-server-settings');
+        switchModalTab('modal-server-settings', 'roles-tab');
+    }
+    
+    window.renderServerRoles = () => {
+        const list = document.getElementById('role-list-container');
+        if (!list || !serverRoles[currentServerId]) return;
+        list.innerHTML = '';
+        
+        serverRoles[currentServerId].forEach(role => {
+            const el = document.createElement('div');
+            el.className = 'flex justify-between items-center bg-gray-700 p-2 rounded-md mb-2 cursor-pointer';
+            el.innerHTML = `
+                <span style="color: ${role.color}; font-weight: bold;">${role.name}</span>
+                <span class="text-xs text-gray-400">${Object.keys(role.permissions).length} permissions</span>
+            `;
+            list.appendChild(el);
+        });
+    }
+    
+    window.createRole = async () => {
+        const name = document.getElementById('role-name-input').value.trim();
+        const color = document.getElementById('role-color-input').value;
+        
+        if (!name) return showCustomAlert("Role name is required.");
+        
+        window.showLoading("Creating role...");
+        try {
+            const roleId = name.toLowerCase().replace(/[^a-z0-9]/g, '');
+            const newRoleRef = doc(db, `${dbRoot}/public/data/servers/${currentServerId}/roles`, roleId);
+            
+            await setDoc(newRoleRef, {
+                id: roleId,
+                name: name,
+                color: color,
+                permissions: { channels: 'default', kick: false, ban: false },
+                createdAt: Timestamp.now()
+            });
+            document.getElementById('role-name-input').value = '';
+        } catch (error) {
+            console.error("Error creating role:", error);
+            showCustomAlert("Failed to create role. See console.");
+        } finally {
+            window.hideLoading();
+        }
+    }
+
+    // --- PFP and User Customization Logic (Remains the same) ---
+    window.updatePFPPreview = (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                document.getElementById('pfp-preview').style.backgroundImage = `url('${e.target.result}')`;
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+    
+    window.saveUserSettings = async () => {
+        const newUsername = document.getElementById('user-settings-username').value.trim();
+        const pfpFile = document.getElementById('user-settings-pfp').files[0];
+
+        if (!newUsername || newUsername === currentUsername) return showCustomAlert("Please enter a new username.");
+
+        window.showLoading("Updating user profile...");
+        let newAvatarUrl = currentUserAvatar;
+        
+        try {
+            if (pfpFile) {
+                newAvatarUrl = await uploadFile(pfpFile, 'pfp-images');
+            }
+            
+            const userRef = doc(db, `${dbRoot}/public/data/users`, userId);
+            await updateDoc(userRef, {
+                username: newUsername,
+                avatar: newAvatarUrl
+            });
+            
+            closeModal('modal-user-settings');
+            showCustomAlert("Profile updated successfully!");
+        } catch (error) {
+            console.error("Error saving user settings: ", error);
+            showCustomAlert("Failed to update profile. See console.");
+        } finally {
+            window.hideLoading();
+        }
+    }
+
+    // --- General File Upload Utility (Remains the same) ---
+    function uploadFile(file, path) {
+        return new Promise((resolve, reject) => {
+            const storageRef = ref(storage, `${dbRoot}/public/data/${path}/${userId}_${Date.now()}_${file.name}`);
+            window.showLoading("Uploading file...");
+            const uploadTask = uploadBytes(storageRef, file);
+            
+            uploadTask.then(snapshot => {
+                getDownloadURL(snapshot.ref).then(resolve).catch(reject);
+            }).catch(reject);
+        });
+    }
+
+    // --- Utility Functions (Remains the same) ---
+    window.switchModalTab = (modalId, tabId) => {
+        const modal = document.getElementById(modalId);
+        modal.querySelectorAll('.modal-tab').forEach(tab => tab.classList.remove('active'));
+        modal.querySelectorAll('.modal-tab-content').forEach(content => content.classList.remove('active'));
+        
+        document.getElementById(tabId).classList.add('active');
+        document.getElementById(tabId + '-content').classList.add('active');
+    }
+    
+    window.copyTextToClipboard = function(text) {
+        if (!text) return;
+        try {
+            const tempInput = document.createElement("textarea");
+            tempInput.style.position = 'fixed';
+            tempInput.style.opacity = '0';
+            tempInput.value = text;
+            document.body.appendChild(tempInput);
+            tempInput.focus();
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+            window.showCustomAlert("Copied to clipboard!");
+        } catch (err) {
+            console.error('Could not copy text: ', err);
+            window.showCustomAlert("Error copying text.");
+        }
+    }
+
+    window.showCustomAlert = (message) => {
+        document.getElementById('alert-message').innerText = message;
+        document.getElementById('modal-custom-alert').style.display = 'flex';
+    }
+
+    window.openModal = (id) => {
+        if (id === 'modal-user-settings') {
+            document.getElementById('user-settings-username').value = currentUsername;
+            document.getElementById('pfp-preview').style.backgroundImage = `url('${currentUserAvatar}')`;
+        }
+        document.getElementById(id).style.display = 'flex';
+    }
     window.closeModal = (id) => { 
         document.getElementById(id).style.display = 'none'; 
-        if (id === 'modal-create-snap') clearCanvas();
     }
     window.showLoading = (message) => {
         document.getElementById('loading-message').innerText = message;
         document.getElementById('loading-overlay').style.display = 'flex';
     }
     window.hideLoading = () => document.getElementById('loading-overlay').style.display = 'none';
-
-    // File Upload Helper
-    function uploadFile(file, path) {
-        return new Promise((resolve, reject) => {
-            // FIX: Storage path now includes '/public/data'
-            const storageRef = ref(storage, `${dbRoot}/public/data/${path}/${Date.now()}_${file.name}`);
-            const uploadTask = uploadBytesResumable(storageRef, file);
-            
-            uploadTask.on('state_changed', 
-                (snapshot) => { /* Can be used for progress bar */ }, 
-                (error) => reject(error), 
-                () => {
-                    getDownloadURL(uploadTask.snapshot.ref).then(resolve).catch(reject);
-                }
-            );
-        });
-    }
-
-    window.createSnap = async () => {
-        const text = document.getElementById('snap-text').value;
-        const file = document.getElementById('snap-file').files[0];
-        const doodleDataUrl = canvas.toDataURL();
-        
-        if (!text && !file) return;
-        showLoading("Uploading Snap...");
-
-        let imageUrl = null;
-        if (file) {
-            try {
-                imageUrl = await uploadFile(file, 'snaps');
-            } catch (error) {
-                console.error("Error uploading snap image: ", error);
-                hideLoading();
-                return;
-            }
-        }
-        
-        const newSnap = {
-            userId: userId,
-            content: text,
-            imageUrl: imageUrl,
-            doodleUrl: doodleDataUrl, // Save the doodle
-            expiresAt: Timestamp.fromMillis(Date.now() + (24 * 60 * 60 * 1000)),
-            views: 0,
-            timestamp: Timestamp.now()
-        };
-        
-        try {
-            // FIX: Path now includes '/public/data'
-            await addDoc(collection(db, `${dbRoot}/public/data/snaps`), newSnap);
-            await updateUserPoints(5); // +5 points for snap
-            hideLoading();
-            closeModal('modal-create-snap');
-        } catch (error) {
-            console.error("Error creating snap doc: ", error);
-            hideLoading();
-        }
-    }
-    
-    window.createShort = async () => {
-        const caption = document.getElementById('short-caption').value;
-        const file = document.getElementById('short-file').files[0];
-        
-        if (!file) return;
-        showLoading("Uploading Short... (this may take a moment)");
-        
-        let videoUrl = null;
-        try {
-            videoUrl = await uploadFile(file, 'shorts');
-        } catch (error) {
-            console.error("Error uploading short video: ", error);
-            hideLoading();
-            return;
-        }
-        
-        const newShort = {
-            userId: userId,
-            caption: caption,
-            videoUrl: videoUrl,
-            likes: 0,
-            comments: 0,
-            timestamp: Timestamp.now()
-        };
-        
-        try {
-            // FIX: Path now includes '/public/data'
-            await addDoc(collection(db, `${dbRoot}/public/data/shorts`), newShort);
-            await updateUserPoints(10); // +10 points for short
-            hideLoading();
-            closeModal('modal-create-short');
-        } catch (error) {
-            console.error("Error creating short doc: ", error);
-            hideLoading();
-        }
-    }
-
-    // --- Canvas Drawing Functions ---
-    function startDrawing(e) { isDrawing = true; draw(e); }
-    function stopDrawing() { isDrawing = false; ctx.beginPath(); }
-    function draw(e) {
-        if (!isDrawing) return;
-        const rect = canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        ctx.lineTo(x, y);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(x, y);
-    }
-    window.clearCanvas = () => {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-    }
 </script>
 
 </head>
 <body>
 
-<div id="app">
+<div id="app" style="display: none;">
     <!-- 1. Server Sidebar -->
     <nav class="server-sidebar" id="server-list">
         <!-- Rendered via JS -->
+        <div class="server-icon add-server" onclick="openModal('modal-create-server')" title="Create Server">
+            +
+        </div>
+        <div class="server-icon add-server" onclick="logOut()" title="Logout" style="margin-top: auto; margin-bottom: 20px; background: var(--danger);">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-log-out"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+        </div>
     </nav>
 
     <!-- 2. Channel Sidebar (Contextual) -->
     <aside class="channel-sidebar" id="channel-sidebar">
-        <div class="server-header" id="server-name">Loading...</div>
+        <div class="server-header" onclick="openServerSettings()">
+            <span id="server-name-display">Loading...</span>
+            <span id="server-settings-btn" class="settings-icon" style="display: none;" title="Server Settings (Owner Only)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-settings"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.09a2 2 0 0 0-2.73 2.73l.09.15a2 2 0 0 1 0 2l-.25.43a2 2 0 0 1-1.73 1v.44a2 2 0 0 0 2 2h.18a2 2 0 0 1 1.73 1l.25.43a2 2 0 0 1 0 2l-.09.15a2 2 0 0 0 2.73 2.73l.15-.09a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V22a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.09a2 2 0 0 0 2.73-2.73l-.09-.15a2 2 0 0 1 0-2l.25-.43a2 2 0 0 1 1.73-1v-.44a2 2 0 0 0-2-2h-.18a2 2 0 0 1-1.73-1l-.25-.43a2 2 0 0 1 0-2l.09-.15a2 2 0 0 0-2.73-2.73l-.15.09a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+            </span>
+        </div>
         <div class="channel-list" id="channel-list">
             <!-- Rendered via JS -->
         </div>
-        <div class="user-panel">
-            <div class="avatar" id="user-avatar" style="width: 32px; height: 32px; background: url('https://placehold.co/64x64/72767d/FFFFFF?text=') no-repeat center center / cover; border-radius: 50%;"></div>
+        <div class="user-panel" id="user-panel">
+            <div id="user-avatar" class="avatar" style="width: 32px; height: 32px;"></div>
             <div class="user-info">
-                <div class="user-name" id="user-name">Connecting...</div>
-                <div class="user-id" id="user-id">...</div>
+                <div class="user-name" id="user-name">Guest</div>
+                <div class="user-id text-xs cursor-pointer" id="user-id" title="Click to copy full ID">...</div>
+            </div>
+            <div id="copy-user-id" class="ml-auto text-xs text-gray-400 p-1 rounded hover:bg-gray-700 cursor-pointer" title="Copy User ID">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-copy"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1-1.1-2-1.9-2-3V4c0-1.1.9-2 2-2h9c1.1 0 1.9.9 3 2"/></svg>
             </div>
         </div>
     </aside>
@@ -1017,88 +1204,162 @@
                 <div class="chat-input-wrapper">
                     <input type="text" id="message-input" placeholder="Loading..." autocomplete="off">
                 </div>
-                <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">
-                    Commands: /roll, /joke, /poll [question]
-                </div>
             </div>
         </div>
-
-        <!-- Snap Feed View -->
-        <div id="view-snap" class="snap-feed">
-            <h2 style="margin-bottom: 20px; text-align: center;">Snap Feed (Ephemeral)</h2>
-            <div id="snap-container"></div>
-            <div class="snap-create-btn" onclick="openModal('modal-create-snap')">📸 Post Snap</div>
-        </div>
-
-        <!-- TikTok Shorts View -->
-        <div id="view-shorts" class="shorts-container">
-            <!-- Shorts Rendered Here -->
-            <div class="short-create-btn" onclick="openModal('modal-create-short')">+</div>
-        </div>
-        
-        <!-- Leaderboard View -->
-        <div id="view-leaderboard" class="leaderboard-view">
-            <h2>🏆 Global Leaderboard</h2>
-            <div id="leaderboard-container">
-                <!-- Rendered via JS -->
-            </div>
-        </div>
+        <!-- Other views (Snap, Shorts, Leaderboard, Discovery) go here if needed -->
     </main>
 
     <!-- 4. Member Sidebar -->
     <aside class="member-sidebar visible" id="member-sidebar">
-        <div class="role-header">Bots</div>
-        <div id="member-list-bots"></div>
-        <div class="role-header">Online</div>
-        <div id="member-list-users"></div>
+        <div id="member-list-container"></div>
     </aside>
 </div>
 
 <!-- Modals -->
 
+<!-- AUTH MODAL (Login/Signup) -->
+<div id="modal-auth" class="modal">
+    <div class="modal-content" style="width: 360px;">
+        <h3 id="auth-title" class="text-2xl font-bold mb-2 text-center">Welcome!</h3>
+        <p id="auth-subtitle" class="text-sm text-gray-400 mb-6 text-center">Sign in or create an account to use the platform.</p>
+        
+        <!-- Username Field (Only for Signup) -->
+        <div id="auth-username-group" class="auth-input-group collapsed">
+            <input type="text" id="auth-username" placeholder="Username (Required for Sign Up)">
+        </div>
+        
+        <input type="text" id="auth-identifier" placeholder="Email Address or Username">
+        <input type="password" id="auth-password" placeholder="Password">
+        
+        <div style="display:flex; flex-direction: column; gap: 10px; margin-top: 20px;">
+            <button class="btn" id="primary-auth-btn" onclick="handleAuth('login')">Log In</button>
+            <div class="text-xs text-center text-gray-400 my-1">OR</div>
+            <!-- Google Sign-In Button -->
+            <button class="btn google-btn" onclick="signInWithGoogle()">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="20px" height="20px" style="margin-right: 8px;"><path fill="#FFC107" d="M43.6 20.4H24v7.5h11.8c-.8 4.7-4.4 7.6-9.8 7.6-6.4 0-11.6-5.2-11.6-11.6S15.4 12.7 21.8 12.7c3.2 0 6.2 1.3 8.4 3.5l5.3-5.3C32.4 6.8 27.3 4 21.8 4 10.9 4 2 12.9 2 23.8S10.9 43.6 21.8 43.6c11.7 0 19.3-8.1 19.3-17.7 0-1.2-.2-2.3-.3-3.4z"/><path fill="#FF3D00" d="M6 23.8c0-1.8.3-3.6.8-5.3L1.5 13.9C.5 16.7 0 20.2 0 23.8s.5 7.1 1.5 9.9l5.3-4.6c-.5-1.7-.8-3.5-.8-5.3z"/><path fill="#4CAF50" d="M21.8 43.6c5.5 0 10.5-2.2 14.1-5.8l-5.3-4.6c-2 2-4.8 3.2-8.8 3.2-6.4 0-11.6-5.2-11.6-11.6 0-1.2.2-2.3.5-3.4H6c-.5 1.7-.8 3.5-.8 5.3 0 10.9 8.9 19.8 19.8 19.8z"/><path fill="#1976D2" d="M43.6 20.4h-19.6V12.9h19.6c.1 1.1.2 2.2.2 3.4 0 5.8-3.9 10.8-9.4 13.5l5.3 4.6c3.4-3 5.4-7.4 5.4-12.2 0-1.2-.2-2.3-.3-3.4z"/></svg>
+                Sign in with Google
+            </button>
+        </div>
+
+        <div id="switch-auth-mode" class="text-center text-sm mt-4 text-gray-400">
+            <!-- Content updated dynamically by JS -->
+        </div>
+    </div>
+</div>
+
 <!-- Loading Overlay -->
 <div id="loading-overlay" class="modal">
     <div class="spinner"></div>
-    <div id="loading-message">Uploading...</div>
+    <div id="loading-message">Loading...</div>
 </div>
 
-<!-- Create Snap Modal -->
-<div id="modal-create-snap" class="modal">
-    <div class="modal-content">
-        <h3>Create Ephemeral Post</h3>
-        <textarea id="snap-text" placeholder="What's happening?" rows="3"></textarea>
-        
-        <label style="font-size: 12px; color: var(--text-muted); margin-top: 10px; display: block;">Image:</label>
-        <input type="file" id="snap-file" accept="image/*">
-        
-        <label style="font-size: 12px; color: var(--text-muted); margin-top: 10px; display: block;">Doodle:</label>
-        <canvas id="snap-canvas" width="400" height="150"></canvas>
-        
-        <div style="display:flex; justify-content: space-between; margin-top: 15px;">
-            <button class="btn" onclick="closeModal('modal-create-snap')">Cancel</button>
-            <div>
-                <button class="btn" onclick="clearCanvas()" style="background: var(--text-muted); margin-right: 10px;">Clear</button>
-                <button class="btn" onclick="createSnap()">Post (24h)</button>
-            </div>
+<!-- Custom Alert Modal -->
+<div id="modal-custom-alert" class="modal">
+    <div class="modal-content" style="width: 300px;">
+        <h3 class="text-xl mb-4">Notification</h3>
+        <p id="alert-message" class="mb-6"></p>
+        <div class="flex justify-end">
+            <button class="btn" onclick="closeModal('modal-custom-alert')">OK</button>
         </div>
     </div>
 </div>
 
-<!-- Create Short Modal -->
-<div id="modal-create-short" class="modal">
+<!-- Create Server Modal -->
+<div id="modal-create-server" class="modal">
     <div class="modal-content">
-        <h3>Upload Short</h3>
-        <textarea id="short-caption" placeholder="Add a caption..." rows="2"></textarea>
+        <h3>Create Your Own Server</h3>
+        <p class="text-sm text-gray-400 mb-4">You will be automatically set as the **Owner**.</p>
         
-        <label style="font-size: 12px; color: var(--text-muted); margin-top: 10px; display: block;">Video File (max 100MB):</label>
-        <input type="file" id="short-file" accept="video/*">
+        <input type="text" id="server-name-input" placeholder="Server Name (e.g., My Coding Crew)">
+        <input type="text" id="server-icon-input" placeholder="Icon (e.g., C, ⭐, 🚀) - Optional">
         
         <div style="display:flex; justify-content: flex-end; margin-top: 15px;">
-            <button class="btn" onclick="closeModal('modal-create-short')" style="background: var(--text-muted); margin-right: 10px;">Cancel</button>
-            <button class="btn" onclick="createShort()">Upload</button>
+            <button class="btn" onclick="closeModal('modal-create-server')" style="background: var(--text-muted); margin-right: 10px;">Cancel</button>
+            <button class="btn" onclick="createServer()">Create Server</button>
         </div>
     </div>
 </div>
+
+<!-- Create Channel Modal -->
+<div id="modal-create-channel" class="modal">
+    <div class="modal-content">
+        <h3>Create Channel</h3>
+        <input type="text" id="channel-name-input" placeholder="Channel Name (e.g., general-chat)">
+        
+        <select id="channel-type-input">
+            <option value="text"># Text</option>
+            <option value="voice">🔊 Voice Lounge (TTS Enabled)</option>
+        </select>
+        
+        <div style="display:flex; justify-content: flex-end; margin-top: 15px;">
+            <button class="btn" onclick="closeModal('modal-create-channel')" style="background: var(--text-muted); margin-right: 10px;">Cancel</button>
+            <button class="btn" onclick="createChannel()">Create</button>
+        </div>
+    </div>
+</div>
+
+<!-- User Settings Modal (PFP and Username) -->
+<div id="modal-user-settings" class="modal">
+    <div class="modal-content">
+        <h3 class="text-xl font-bold mb-4 text-center">User Customization</h3>
+        
+        <div id="pfp-preview"></div>
+        <label class="text-sm text-gray-400 block mt-2">Update Profile Picture</label>
+        <input type="file" id="user-settings-pfp" accept="image/*" onchange="updatePFPPreview(event)">
+        
+        <label class="text-sm text-gray-400 block mt-4">Username</label>
+        <input type="text" id="user-settings-username" placeholder="New Username">
+        
+        <div style="display:flex; justify-content: flex-end; margin-top: 20px;">
+            <button class="btn" onclick="closeModal('modal-user-settings')" style="background: var(--text-muted); margin-right: 10px;">Cancel</button>
+            <button class="btn" onclick="saveUserSettings()">Save Changes</button>
+        </div>
+    </div>
+</div>
+
+<!-- Server Settings Modal (Roles Tab) -->
+<div id="modal-server-settings" class="modal">
+    <div class="modal-content" style="width: 700px; max-width: 95%; display: flex; flex-direction: column;">
+        <h3 class="text-2xl font-bold mb-4">Server Settings</h3>
+
+        <div class="flex border-b border-gray-700">
+            <div id="roles-tab" class="modal-tab active" onclick="switchModalTab('modal-server-settings', 'roles-tab')">Roles</div>
+            <div id="permissions-tab" class="modal-tab" onclick="switchModalTab('modal-server-settings', 'permissions-tab')">Channel Permissions</div>
+        </div>
+
+        <div id="roles-tab-content" class="modal-tab-content active flex-1">
+            <h4 class="text-lg font-semibold mb-3">Custom Roles</h4>
+            <div id="role-list-container" class="max-h-64 overflow-y-auto pr-2">
+                <!-- Roles list rendered here -->
+            </div>
+            
+            <hr class="my-4 border-gray-700">
+            
+            <h4 class="text-lg font-semibold mb-3">Create New Role</h4>
+            <div class="flex gap-4 items-center">
+                <input type="text" id="role-name-input" placeholder="Role Name (e.g., Moderators)">
+                <input type="color" id="role-color-input" value="#99AAB5" style="width: 100px; padding: 5px;">
+                <button class="btn" onclick="createRole()" style="flex-shrink: 0;">Create</button>
+            </div>
+
+            <div class="text-sm text-gray-400 mt-2">Note: Full permission editing is simulated.</div>
+        </div>
+
+        <div id="permissions-tab-content" class="modal-tab-content flex-1">
+            <h4 class="text-lg font-semibold mb-3">Channel Overrides (Simulated)</h4>
+            <p class="text-sm text-gray-400 mb-4">Use the list on the left to select a role and assign channel permissions (read, write, manage).</p>
+        </div>
+        
+        <div style="display:flex; justify-content: flex-end; margin-top: 20px;">
+            <button class="btn" onclick="closeModal('modal-server-settings')">Close</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Show the app container once the initial auth state is handled.
+    document.getElementById('app').style.display = 'flex'; 
+</script>
 
 </body>
 </html>
